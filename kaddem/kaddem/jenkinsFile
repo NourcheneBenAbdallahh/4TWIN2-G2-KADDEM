@@ -98,7 +98,7 @@ pipeline {
                     try {
                         checkout([
                             $class: 'GitSCM',
-                            branches: [[name: 'Oussema']],
+                            branches: [[name: 'OussemaJridi-4TWIN2-G6']],
                             userRemoteConfigs: [[url: 'https://github.com/Nouunouu/DevopsProject.git']]
                         ])
                     } catch (Exception e) {
