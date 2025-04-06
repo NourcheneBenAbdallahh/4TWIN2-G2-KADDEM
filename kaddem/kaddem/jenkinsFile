@@ -1,37 +1,46 @@
 pipeline {
-    agent any  // Run on any available node
+    agent any
     tools {
-        maven 'M2_HOME'  // Ensure this matches your Maven tool configuration in Jenkins
+        maven 'M2_HOME'
     }
     options {
-        timeout(time: 30, unit: 'MINUTES')  // Increased timeout
+        timeout(time: 30, unit: 'MINUTES')
     }
     environment {
         APP_ENV = "DEV"
-        NEXUS_REPO_URL = "http://127.0.0.1:8081/repository/maven-releases/"  // Replace with your Nexus repository URL
-        MAVEN_SETTINGS = "/usr/share/maven/conf/settings.xml"  // Use a managed settings.xml file in Jenkins
+        NEXUS_REPO_URL = "http://127.0.0.1:8081/repository/maven-releases/"
+        MAVEN_SETTINGS = "/usr/share/maven/conf/settings.xml"
     }
     stages {
         stage('Checkout Code') {
             steps {
                 script {
-                    // Checkout the 'Oussema' branch from the repository
-                    checkout([
-                        $class: 'GitSCM',
-                        branches: [[name: 'Oussema']],  // Specify the branch name here
-                        userRemoteConfigs: [[url: 'https://github.com/Nouunouu/DevopsProject.git']]  // Replace with your repository URL
-                    ])
+                    try {
+                        checkout([
+                            $class: 'GitSCM',
+                            branches: [[name: 'Oussema']],
+                            userRemoteConfigs: [[url: 'https://github.com/Nouunouu/DevopsProject.git']]
+                        ])
+                    } catch (Exception e) {
+                        echo "Failed to checkout code: ${e.message}"
+                        throw e // Rethrow to fail the pipeline if checkout fails
+                    }
                 }
             }
         }
         stage('Code Build') {
             steps {
-                sh '''
-                    # Navigate to the directory containing the pom.xml file
-                    cd kaddem/kaddem
-                    # Run Maven commands
-                    mvn clean install -DskipTests
-                '''
+                script {
+                    try {
+                        sh '''
+                            cd kaddem/kaddem
+                            mvn clean install -DskipTests
+                        '''
+                    } catch (Exception e) {
+                        echo "Code build failed: ${e.message}"
+                        throw e // Rethrow to fail the pipeline if build fails
+                    }
+                }
             }
         }
         stage('Testing') {
@@ -39,35 +48,45 @@ pipeline {
                 script {
                     try {
                         sh '''
-                            # Navigate to the directory containing the pom.xml file
                             cd kaddem/kaddem
-                            # Run unit tests
                             mvn test
                         '''
                     } catch (Exception e) {
-                        echo "Tests failed, but continuing the pipeline..."
+                        echo "Tests failed: ${e.message}"
+                        // Do not rethrow to allow pipeline to continue
                     }
                 }
             }
         }
         stage('SonarQube') {
             steps {
-                sh '''
-                    # Navigate to the directory containing the pom.xml file
-                    cd kaddem/kaddem
-                    # Run SonarQube analysis
-                    mvn sonar:sonar -Dsonar.token=squ_75ec5f123179a9c2f52a8d9c5ae0095c0fc883a6 -DskipTests
-                '''
+                script {
+                    try {
+                        sh '''
+                            sudo docker run -d --name sonarqube -p 9000:9000 -p 9092:9092 sonarqube
+                            cd kaddem/kaddem
+                            mvn sonar:sonar -Dsonar.token=squ_75ec5f123179a9c2f52a8d9c5ae0095c0fc883a6 -DskipTests
+                        '''
+                    } catch (Exception e) {
+                        echo "SonarQube analysis failed: ${e.message}"
+                        throw e // Rethrow to fail the pipeline if SonarQube fails
+                    }
+                }
             }
         }
         stage('Deploy to Nexus') {
             steps {
-                sh '''
-                    # Navigate to the directory containing the pom.xml file
-                    cd kaddem/kaddem
-                    # Deploy the artifact to Nexus
-                    mvn deploy --settings ${MAVEN_SETTINGS} -DskipTests
-                '''
+                script {
+                    try {
+                        sh '''
+                            cd kaddem/kaddem
+                            mvn deploy --settings ${MAVEN_SETTINGS} -DskipTests
+                        '''
+                    } catch (Exception e) {
+                        echo "Deployment to Nexus failed: ${e.message}"
+                        throw e // Rethrow to fail the pipeline if deployment fails
+                    }
+                }
             }
         }
         stage('Docker Compose') {
@@ -75,18 +94,62 @@ pipeline {
                 script {
                     try {
                         sh '''
-                            # Navigate to the directory containing docker-compose.yml
                             cd kaddem/kaddem
-                            # Build Docker images
                             sudo docker-compose build
-                            # Start the containers in detached mode
                             sudo docker-compose up -d
-                            # Verify the containers are running
                             sudo docker-compose ps
                         '''
                     } catch (Exception e) {
                         echo "Docker Compose failed: ${e.message}"
-                        throw e  // Rethrow the exception to fail the pipeline
+                        throw e // Rethrow to fail the pipeline if Docker Compose fails
+                    }
+                }
+            }
+        }
+        stage('Prometheus') {
+            steps {
+                script {
+                    try {
+                        // Pull and start Prometheus container
+                        sh '''
+                            sudo docker pull prom/prometheus:latest
+                            sudo docker run -d --name prometheus -p 9090:9090 prom/prometheus
+                        '''
+                        // Define the Prometheus job configuration
+                        def prometheusConfig = """
+                        - job_name: jenkins
+                          metrics_path: /prometheus
+                          static_configs:
+                            - targets: ['192.168.33.10:8080']
+                        """
+                        // Append the new job configuration to prometheus.yml
+                        sh """
+                            docker exec -i prometheus sh -c '
+                                echo "${prometheusConfig}" >> /etc/prometheus/prometheus.yml
+                            '
+                        """
+                        // Reload Prometheus configuration
+                        sh """
+                            curl -X POST http://localhost:9090/-/reload
+                        """
+                    } catch (Exception e) {
+                        echo "Prometheus configuration failed: ${e.message}"
+                        throw e // Rethrow to fail the pipeline if Prometheus setup fails
+                    }
+                }
+            }
+        }
+        stage('Grafana') {
+            steps {
+                script {
+                    try {
+                        sh '''
+                            sudo docker pull grafana/grafana:latest
+                            sudo docker run -d --name grafana -p 3000:3000 grafana/grafana                        
+                        '''
+                    } catch (Exception e) {
+                        echo "Grafana setup failed: ${e.message}"
+                        throw e // Rethrow to fail the pipeline if Grafana setup fails
                     }
                 }
             }
@@ -98,10 +161,14 @@ pipeline {
             script {
                 try {
                     sh '''
-                        # Navigate to the directory containing docker-compose.yml
-                        cd kaddem/kaddem
-                        # Stop and remove Docker containers
-                        sudo docker-compose down
+                        // cd kaddem/kaddem
+                        // sudo docker-compose down
+                        // sudo docker stop sonarqube
+                        // sudo docker rm sonarqube
+                        // sudo docker stop prometheus
+                        // sudo docker rm prometheus
+                        // sudo docker stop grafana
+                        // sudo docker rm grafana
                     '''
                 } catch (Exception e) {
                     echo "Failed to stop and remove Docker containers: ${e.message}"
