@@ -12,93 +12,13 @@ pipeline {
         MAVEN_SETTINGS = "/usr/share/maven/conf/settings.xml"
     }
     stages {
-        stage('Ensure Containers Running') {
-            steps {
-                script {
-                    try {
-                        // Check if Grafana container is running
-                        sh '''
-                            if ! docker ps --filter "name=grafana" | grep -q grafana; then
-                                echo "Grafana container is not running. Starting it..."
-                                docker run -d --name grafana -p 3000:3000 grafana/grafana
-                            else
-                                echo "Grafana container is already running."
-                            fi
-                        '''
-                        // Check if Prometheus container is running
-                        sh '''
-                            if ! docker ps --filter "name=prometheus" | grep -q prometheus; then
-                                echo "Prometheus container is not running. Starting it..."
-                                docker run -d --name prometheus -p 9090:9090 prom/prometheus
-                            else
-                                echo "Prometheus container is already running."
-                            fi
-                        '''
-                        // Check if Nexus container is running
-                        sh '''
-                            if ! docker ps --filter "name=nexus" | grep -q nexus; then
-                                echo "Nexus container is not running. Starting it..."
-                                docker run -d --name nexus -p 8081:8081 sonatype/nexus3
-                            else
-                                echo "Nexus container is already running."
-                            fi
-                        '''
-                        // Check if SonarQube container is running
-                        sh '''
-                            if ! docker ps --filter "name=sonarqube" | grep -q sonarqube; then
-                                echo "SonarQube container is not running. Starting it..."
-                                docker run -d --name sonarqube -p 9000:9000 -p 9092:9092 sonarqube
-                            else
-                                echo "SonarQube container is already running."
-                            fi
-                        '''
-                    } catch (Exception e) {
-                        echo "Failed to ensure containers are running: ${e.message}"
-                        throw e // Rethrow to fail the pipeline if container setup fails
-                    }
-                }
-            }
-        }
-        stage('Configure Prometheus') {
-            steps {
-                script {
-                    try {
-                        // Define the Prometheus job configuration
-                        def prometheusConfig = """
-                        - job_name: jenkins
-                        metrics_path: /prometheus
-                        static_configs:
-                            - targets: ['192.168.33.10:8080']
-                        """
-                        // Check if the configuration already exists in prometheus.yml
-                        sh """
-                            docker exec -i prometheus sh -c '
-                                if ! grep -q "job_name: jenkins" /etc/prometheus/prometheus.yml; then
-                                    echo "${prometheusConfig}" >> /etc/prometheus/prometheus.yml
-                                    echo "Jenkins job configuration appended to prometheus.yml"
-                                else
-                                    echo "Jenkins job configuration already exists in prometheus.yml"
-                                fi
-                            '
-                        """
-                        // Reload Prometheus configuration
-                        sh """
-                            curl -X POST http://localhost:9090/-/reload
-                        """
-                    } catch (Exception e) {
-                        echo "Failed to configure Prometheus: ${e.message}"
-                        throw e
-                    }
-                }
-            }
-        }
         stage('Checkout Code') {
             steps {
                 script {
                     try {
                         checkout([
                             $class: 'GitSCM',
-                            branches: [[name: 'OussemaJridi-4TWIN2-G6']],
+                            branches: [[name: 'Oussema']],
                             userRemoteConfigs: [[url: 'https://github.com/Nouunouu/DevopsProject.git']]
                         ])
                     } catch (Exception e) {
