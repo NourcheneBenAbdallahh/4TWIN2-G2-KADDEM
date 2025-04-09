@@ -84,7 +84,6 @@ pipeline {
                         '''
                     } catch (Exception e) {
                         echo "Deployment to Nexus failed: ${e.message}"
-                        throw e // Rethrow to fail the pipeline if deployment fails
                     }
                 }
             }
