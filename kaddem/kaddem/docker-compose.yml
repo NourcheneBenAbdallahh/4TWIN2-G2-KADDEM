@@ -1,14 +1,14 @@
 version: "3.8"
 services:
- OussemaJridi-4TWIN2-G6-KADDEM:
-  image: OussemaJridi-4TWIN2-G6-KADDEM:latest
+ oussemajridi-4twin2-g6-kaddem:
+  image: oussemajridi-4twin2-g6-kaddem:latest
   build:
    context: .
    dockerfile: Dockerfile
   ports:
    - "8089:8089"
   environment:
-   - SPRING_DATASOURCE_URL=jdbc:mysql://localhost:3306/kaddem?&createDatabaseIfNotExist=true&useUnicode=true&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC
+   - SPRING_DATASOURCE_URL=jdbc:mysql://db:3306/kaddem?&createDatabaseIfNotExist=true&useUnicode=true&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC
    - SPRING_DATASOURCE_USERNAME=root
    - SPRING_DATASOURCE_PASSWORD=root
   depends_on:
@@ -20,3 +20,14 @@ services:
    MYSQL_DATABASE: kaddem
   ports:
    - "3306:3306"
+ prometheus:
+  image: prom/prometheus:v2.47.1
+  container_name: prometheus
+  volumes:
+   - ./prometheus:/etc/prometheus
+  ports:
+   - "9090:9090"
+  command:
+   - "--config.file=/etc/prometheus/prometheus.yml"
+  depends_on:
+   - oussemajridi-4twin2-g6-kaddem
