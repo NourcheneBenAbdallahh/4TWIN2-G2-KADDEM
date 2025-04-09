@@ -121,7 +121,7 @@ pipeline {
                         sh '''
                             IMAGE_NAME="${DOCKER_IMAGE_NAME}"
                             echo "Tagging image..."
-                            sudo docker tag spring-app:latest \$IMAGE_NAME
+                            sudo docker tag oussemajridi-4twin2-g6-kaddem:latest \$IMAGE_NAME
                         '''
                         // Push the Docker image to Docker Hub
                         sh '''
