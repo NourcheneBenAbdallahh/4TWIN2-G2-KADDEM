@@ -95,6 +95,7 @@ pipeline {
                     try {
                         sh '''
                             cd kaddem/kaddem
+                            sudo docker-compose down
                             sudo docker-compose build
                             sudo docker-compose up -d
                             sudo docker-compose ps
