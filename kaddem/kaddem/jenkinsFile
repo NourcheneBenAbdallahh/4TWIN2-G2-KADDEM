@@ -10,6 +10,7 @@ pipeline {
         APP_ENV = "DEV"
         NEXUS_REPO_URL = "http://127.0.0.1:8081/repository/maven-releases/"
         MAVEN_SETTINGS = "/usr/share/maven/conf/settings.xml"
+        DOCKER_IMAGE_NAME = "oussemajridi/OussemaJridi-4TWIN2-G6-KADDEM:latest" // Update with your Docker Hub username and repository name
     }
     stages {
         stage('Checkout Code') {
@@ -105,26 +106,43 @@ pipeline {
                 }
             }
         }
-    }
-    post {
-        always {
-            echo "======always======"
-            script {
-                try {
-                    sh '''
-                        cd kaddem/kaddem
-                        sudo docker-compose down
-                    '''
-                } catch (Exception e) {
-                    echo "Failed to stop and remove Docker containers: ${e.message}"
+        stage('Push Docker Image to Docker Hub') {
+            steps {
+                script {
+                    try {
+                        // Log in to Docker Hub using the existing credentials
+                        withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', usernameVariable: 'DOCKERHUB_USERNAME', passwordVariable: 'DOCKERHUB_PASSWORD')]) {
+                            sh '''
+                                echo "Logging into Docker Hub..."
+                                echo "${DOCKERHUB_PASSWORD}" | sudo docker login -u "${DOCKERHUB_USERNAME}" --password-stdin
+                            '''
+                        }
+                        // Tag the Docker image
+                        sh '''
+                            IMAGE_NAME="${DOCKER_IMAGE_NAME}"
+                            echo "Tagging image..."
+                            sudo docker tag spring-app:latest \$IMAGE_NAME
+                        '''
+                        // Push the Docker image to Docker Hub
+                        sh '''
+                            IMAGE_NAME="${DOCKER_IMAGE_NAME}"
+                            echo "Pushing image to Docker Hub..."
+                            sudo docker push \$IMAGE_NAME
+                        '''
+                    } catch (Exception e) {
+                        echo "Failed to push Docker image to Docker Hub: ${e.message}"
+                        throw e // Rethrow to fail the pipeline if pushing fails
+                    }
                 }
             }
         }
+    }
+    post {
         success {
-            echo "=====pipeline executed successfully ====="
+            echo "===== Pipeline executed successfully ====="
         }
         failure {
-            echo "======pipeline execution failed======"
+            echo "====== Pipeline execution failed ======"
         }
     }
 }

@@ -9,10 +9,10 @@
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <groupId>tn.esprit.spring</groupId>
-    <artifactId>kaddem</artifactId>
-    <version>0.0.1-RELEASE</version>
-    <name>kaddem</name>
-    <description>kaddem</description>
+    <artifactId>4TWIN2-G6-KADDEM</artifactId>
+    <version>1.0-RELEASE</version>
+    <name>4TWIN2-G6-KADDEM</name>
+    <description>4TWIN2-G6-KADDEM</description>
     <properties>
         <java.version>1.8</java.version>
     </properties>
@@ -25,7 +25,6 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
-
         <dependency>
             <groupId>com.mysql</groupId>
             <artifactId>mysql-connector-j</artifactId>
@@ -46,9 +45,7 @@
             <artifactId>springdoc-openapi-ui</artifactId>
             <version>1.6.9</version>
         </dependency>
-
     </dependencies>
-
     <build>
         <plugins>
             <plugin>

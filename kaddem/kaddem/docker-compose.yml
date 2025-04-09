@@ -1,7 +1,7 @@
 version: "3.8"
 services:
  app:
-  image: spring-app:latest
+  image: OussemaJridi-4TWIN2-G6-KADDEM:latest
   build:
    context: .
    dockerfile: Dockerfile

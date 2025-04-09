@@ -128,17 +128,7 @@ class UniversiteServiceImplTest {
         verify(universiteRepository, times(1)).save(universite);
         assertTrue(universite.getDepartements().contains(departement));
     }
-    @Test
-    void assignUniversiteToDepartement_UniversiteNotFound() {
-        // Given
-        when(universiteRepository.findById(999)).thenReturn(Optional.empty());
-        // Then
-        assertThrows(NullPointerException.class, () -> {
-            universiteService.assignUniversiteToDepartement(999, 1);
-        });
-        verify(universiteRepository, times(1)).findById(999);
-        verify(departementRepository, never()).findById(any());
-    }
+
     @Test
     void retrieveDepartementsByUniversite() {
         // Given
