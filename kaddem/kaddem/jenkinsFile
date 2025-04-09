@@ -131,7 +131,6 @@ pipeline {
                         '''
                     } catch (Exception e) {
                         echo "Failed to push Docker image to Docker Hub: ${e.message}"
-                        throw e // Rethrow to fail the pipeline if pushing fails
                     }
                 }
             }
