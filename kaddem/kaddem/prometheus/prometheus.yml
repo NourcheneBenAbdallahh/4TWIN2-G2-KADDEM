@@ -12,6 +12,6 @@ scrape_configs:
    static_configs:
     - targets: ["192.168.33.10:8080"] # Replace with your Jenkins server address
  - job_name: "oussemajridi-4twin2-g6-kaddem"
-   metrics_path: "/actuator/prometheus"
+   metrics_path: "/kaddem/actuator/prometheus"
    static_configs:
     - targets: ["192.168.33.10:8089"]
