@@ -1,31 +1,46 @@
 pipeline {
     agent any
-
-    tools { 
-        jdk 'JAVA_HOME' 
-        maven 'M2_HOME' 
+    tools {
+        maven 'M2_HOME'
     }
-
+    options {
+        timeout(time: 30, unit: 'MINUTES')
+    }
+    environment {
+        APP_ENV = "DEV"
+        NEXUS_REPO_URL = "http://127.0.0.1:8081/repository/maven-releases/"
+        MAVEN_SETTINGS = "/usr/share/maven/conf/settings.xml"
+        DOCKER_IMAGE_NAME = "oussemajridi/oussemajridi-4twin2-g6-kaddem:latest" // Update with your Docker Hub username and repository name
+    }
     stages {
         stage('Checkout Code') {
             steps {
-                // Récupération du code source depuis le dépôt DevopsProject
-                checkout([
-                    $class: 'GitSCM',
-                    branches: [[name: 'hadil']],
-                    userRemoteConfigs: [[url: 'https://github.com/Nouunouu/DevopsProject.git']]
-                ])
+                script {
+                    try {
+                        checkout([
+                            $class: 'GitSCM',
+                            branches: [[name: 'hadil']],
+                            userRemoteConfigs: [[url: 'https://github.com/Nouunouu/DevopsProject.git']]
+                        ])
+                    } catch (Exception e) {
+                        echo "Failed to checkout code: ${e.message}"
+                        throw e // Rethrow to fail the pipeline if checkout fails
+                    }
+                }
             }
         }
-
         stage('Code Build') {
             steps {
-                // Compilation du projet avec Maven
-                sh '''
-                    cd kaddem/kaddem || exit 1
-                    mvn clean install -DskipTests
-                '''
+                script {
+                    try {
+                        sh '''
+                            cd kaddem/kaddem
+                            mvn clean install -DskipTests
+                        '''
+                    } catch (Exception e) {
+                        echo "Code build failed: ${e.message}"
+                        throw e // Rethrow to fail the pipeline if build fails
+                    }
+                }
             }
-        }
-    }
-}
+        }}}
