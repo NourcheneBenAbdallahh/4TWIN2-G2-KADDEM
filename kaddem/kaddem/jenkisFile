@@ -11,18 +11,37 @@ pipeline {
     }
     
    
-    stages {
-        stage('GIT') {
+   stages {
+        stage('Checkout Code') {
             steps {
-                git branch: 'hadil', url: 'https://github.com/Nouunouu/4TWIN2-G6-KADDEM.git'
+                script {
+                    try {
+                        checkout([
+                            $class: 'GitSCM',
+                            branches: [[name: 'hadil']],
+                            userRemoteConfigs: [[url: 'https://github.com/Nouunouu/DevopsProject.git']]
+                        ])
+                    } catch (Exception e) {
+                        throw e  
+                    }
+                }
             }
         }
-
        
 
-        stage('Compile Stage') {
+       stage('Code Build') {
             steps {
-                sh 'mvn clean install -DskipTests'
+                script {
+                    try {
+                        sh '''
+                            cd kaddem/kaddem
+                            mvn clean install -DskipTests
+                        '''
+                    } catch (Exception e) {
+                        
+                        throw e 
+                    }
+                }
             }
         }
 }
