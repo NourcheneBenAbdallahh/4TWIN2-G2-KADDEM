@@ -34,7 +34,7 @@ pipeline {
                         '''
                     } catch (Exception e) {
                         echo "Code build failed: ${e.message}"
-                        throw e // Rethrow to fail the pipeline if build fails
+                        throw e
                     }
                 }
             }
@@ -54,8 +54,9 @@ pipeline {
                 }
             }
         }
+    } // Fin du bloc stages
 
-    post {
+    post {  // Ce bloc doit être au niveau racine du pipeline
         success {
             echo "===== Pipeline executed successfully ====="
         }
