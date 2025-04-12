@@ -7,10 +7,7 @@ pipeline {
         timeout(time: 30, unit: 'MINUTES')
     }
     environment {
-        APP_ENV = "DEV"
-        NEXUS_REPO_URL = "http://127.0.0.1:8081/repository/maven-releases/"
-        MAVEN_SETTINGS = "/usr/share/maven/conf/settings.xml"
-        DOCKER_IMAGE_NAME = "oussemajridi/oussemajridi-4twin2-g6-kaddem:latest" // Update with your Docker Hub username and repository name
+        
     }
     stages {
         stage('Checkout Code') {
