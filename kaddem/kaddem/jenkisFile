@@ -13,7 +13,7 @@ pipeline {
                 checkout([
                     $class: 'GitSCM',
                     branches: [[name: 'hadil']],
-                    userRemoteConfigs: [[url: 'https://github.com/Nouunouu/DevopsProject.git']]
+                    userRemoteConfigs: [[url: 'https://github.com/Nouunouu/4TWIN2-G6-KADDEM.git']]
                 ])
             }
         }
