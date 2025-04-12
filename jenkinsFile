@@ -29,7 +29,7 @@ pipeline {
                 script {
                     try {
                         sh '''
-                            cd kaddem/kaddem
+                            cd 4TWIN2-G6-KADDEM/kaddem/kaddem
                             mvn clean install -DskipTests
                         '''
                     } catch (Exception e) {
@@ -44,19 +44,19 @@ pipeline {
                 script {
                     try {
                         sh '''
-                            cd kaddem/kaddem
+                            cd 4TWIN2-G6-KADDEM/kaddem/kaddem
                             mvn test
                         '''
                     } catch (Exception e) {
                         echo "Tests failed: ${e.message}"
-                        // Do not rethrow to allow pipeline to continue
+                        // On ne relance pas l'erreur pour permettre à la pipeline de continuer
                     }
                 }
             }
         }
-    } // Fin du bloc stages
+    }
 
-    post {  // Ce bloc doit être au niveau racine du pipeline
+    post {
         success {
             echo "===== Pipeline executed successfully ====="
         }
