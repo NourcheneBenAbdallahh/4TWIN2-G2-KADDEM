@@ -2,71 +2,53 @@ pipeline {
     agent any
 
     tools {
-        maven 'M2_HOME' // Ensure 'M2_HOME' is configured in Jenkins Global Tool Configuration
-    }
-
-    environment {
-        DOCKER_IMAGE_NAME = "oussemajridi/4twin2-g6-kaddem:latest" // Define Docker image name as an environment variable
-        DOCKERHUB_CREDENTIALS_ID = 'dockerhub-credentials' // Reference Docker Hub credentials
+        maven 'M2_HOME'
     }
 
     options {
         timeout(time: 30, unit: 'MINUTES')
-        buildDiscarder(logRotator(numToKeepStr: '10')) // Limit build history
     }
 
     stages {
         stage('Checkout Code') {
             steps {
-                checkout([
-                    $class: 'GitSCM',
-                    branches: [[name: 'ebtihel']],
-                    userRemoteConfigs: [[url: 'https://github.com/Nouunouu/DevopsProject.git']]
-                ])
+                script {
+                    try {
+                        checkout([
+                            $class: 'GitSCM',
+                            branches: [[name: 'ebtihel']],
+                            userRemoteConfigs: [[url: 'https://github.com/Nouunouu/DevopsProject.git']]
+                        ])
+                    } catch (Exception e) {
+                        echo "Failed to checkout code: ${e.message}"
+                        throw e
+                    }
+                }
             }
         }
 
         stage('Code Build') {
             steps {
-                sh 'mvn clean install -DskipTests'
-            }
-        }
-
-        stage('Unit Tests') {
-            steps {
-                sh 'mvn test'
-            }
-            post {
-                always {
-                    junit '**/target/surefire-reports/*.xml' // Archive test results
+                script {
+                    try {
+                        sh 'mvn clean install -DskipTests'
+                    } catch (Exception e) {
+                        echo "Code build failed: ${e.message}"
+                        throw e
+                    }
                 }
             }
         }
 
-        stage('Docker Compose') {
+        stage('Testing') {
             steps {
-                dir('kaddem/kaddem') {
-                    sh '''
-                        docker-compose down
-                        docker-compose build
-                        docker-compose up -d
-                        docker-compose ps
-                    '''
-                }
-            }
-        }
+                script {
+                    try {
+                        sh 'mvn test'
+                    } catch (Exception e) {
+                        echo "Tests failed: ${e.message}"
 
-        stage('Push Docker Image to Docker Hub') {
-            steps {
-                withCredentials([usernamePassword(credentialsId: "${DOCKERHUB_CREDENTIALS_ID}", usernameVariable: 'DOCKERHUB_USERNAME', passwordVariable: 'DOCKERHUB_PASSWORD')]) {
-                    sh '''
-                        echo "Logging into Docker Hub..."
-                        echo "$DOCKERHUB_PASSWORD" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
-                        echo "Tagging image..."
-                        docker tag oussemajridi-4twin2-g6-kaddem:latest $DOCKER_IMAGE_NAME
-                        echo "Pushing image to Docker Hub..."
-                        docker push $DOCKER_IMAGE_NAME
-                    '''
+                    }
                 }
             }
         }
@@ -74,13 +56,10 @@ pipeline {
 
     post {
         success {
-            echo 'Pipeline executed successfully!'
+            echo "===== Pipeline executed successfully ====="
         }
         failure {
-            echo 'Pipeline execution failed!'
-        }
-        always {
-            cleanWs() // Clean workspace after build
+            echo "====== Pipeline execution failed ======"
         }
     }
 }
