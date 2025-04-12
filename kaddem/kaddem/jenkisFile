@@ -6,43 +6,26 @@ pipeline {
         maven 'M2_HOME' 
     }
 
-    environment {
-
-    }
-    
-   
-   stages {
+    stages {
         stage('Checkout Code') {
             steps {
-                script {
-                    try {
-                        checkout([
-                            $class: 'GitSCM',
-                            branches: [[name: 'hadil']],
-                            userRemoteConfigs: [[url: 'https://github.com/Nouunouu/DevopsProject.git']]
-                        ])
-                    } catch (Exception e) {
-                        throw e  
-                    }
-                }
+                // Récupération du code source depuis le dépôt DevopsProject
+                checkout([
+                    $class: 'GitSCM',
+                    branches: [[name: 'hadil']],
+                    userRemoteConfigs: [[url: 'https://github.com/Nouunouu/DevopsProject.git']]
+                ])
             }
         }
-       
 
-       stage('Code Build') {
+        stage('Code Build') {
             steps {
-                script {
-                    try {
-                        sh '''
-                            cd kaddem/kaddem
-                            mvn clean install -DskipTests
-                        '''
-                    } catch (Exception e) {
-                        
-                        throw e 
-                    }
-                }
+                // Compilation du projet avec Maven
+                sh '''
+                    cd kaddem/kaddem || exit 1
+                    mvn clean install -DskipTests
+                '''
             }
         }
-}
+    }
 }
