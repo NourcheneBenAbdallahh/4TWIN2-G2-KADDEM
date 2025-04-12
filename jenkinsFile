@@ -9,7 +9,12 @@ pipeline {
         timeout(time: 30, unit: 'MINUTES')
     }
 
+    environment {
+        DOCKER_IMAGE_NAME = 'mouradhassini/timesheet-devops:1.0.0'
+    }
+
     stages {
+        // Étape 1: Récupération du code
         stage('Checkout Code') {
             steps {
                 script {
@@ -20,34 +25,86 @@ pipeline {
                             userRemoteConfigs: [[url: 'https://github.com/Nouunouu/DevopsProject.git']]
                         ])
                     } catch (Exception e) {
-                        echo "Failed to checkout code: ${e.message}"
-                        throw e
+                        error "Échec du checkout: ${e.message}"
                     }
                 }
             }
         }
 
+        // Étape 2: Compilation du code
         stage('Code Build') {
             steps {
                 script {
                     try {
                         sh 'mvn clean install -DskipTests'
                     } catch (Exception e) {
-                        echo "Code build failed: ${e.message}"
-                        throw e
+                        error "Échec de la compilation: ${e.message}"
                     }
                 }
             }
         }
 
+        // Étape 3: Exécution des tests
         stage('Testing') {
             steps {
                 script {
                     try {
                         sh 'mvn test'
                     } catch (Exception e) {
-                        echo "Tests failed: ${e.message}"
-                        // On continue même si les tests échouent
+                        echo "Tests échoués: ${e.message} (mais on continue)"
+                    }
+                }
+            }
+        }
+
+        // Étape 4: Gestion Docker Compose
+        stage('Docker Compose') {
+            steps {
+                script {
+                    try {
+                        sh '''
+                            echo "Arrêt des conteneurs existants..."
+                            docker-compose down || true
+
+                            echo "Construction des images..."
+                            docker-compose build
+
+                            echo "Démarrage des services..."
+                            docker-compose up -d
+
+                            echo "Vérification de l'état..."
+                            docker-compose ps
+                        '''
+                    } catch (Exception e) {
+                        error "Échec Docker Compose: ${e.message}"
+                    }
+                }
+            }
+        }
+
+        // Étape 5: Envoi de l'image sur Docker Hub
+        stage('Push Docker Image') {
+            steps {
+                script {
+                    try {
+                        withCredentials([usernamePassword(
+                            credentialsId: 'dockerhub-credentials',
+                            usernameVariable: 'DOCKERHUB_USER',
+                            passwordVariable: 'DOCKERHUB_PWD'
+                        )]) {
+                            sh '''
+                                echo "Login à Docker Hub..."
+                                echo "$DOCKERHUB_PWD" | docker login -u "$DOCKERHUB_USER" --password-stdin
+
+                                echo "Tagging de l'image..."
+                                docker tag kaddem-app:latest ${DOCKER_IMAGE_NAME}
+
+                                echo "Envoi de l'image..."
+                                docker push ${DOCKER_IMAGE_NAME}
+                            '''
+                        }
+                    } catch (Exception e) {
+                        error "Échec du push Docker: ${e.message}"
                     }
                 }
             }
@@ -55,11 +112,17 @@ pipeline {
     }
 
     post {
+        always {
+            echo "Nettoyage des conteneurs Docker..."
+            sh 'docker-compose down || true'
+        }
         success {
-            echo "===== Pipeline executed successfully ====="
+            echo "✔✔✔ Pipeline exécuté avec succès ✔✔✔"
+            slackSend(color: 'good', message: "Build réussi: ${env.JOB_NAME} #${env.BUILD_NUMBER}")
         }
         failure {
-            echo "====== Pipeline execution failed ======"
+            echo "✖✖✖ Échec du pipeline ✖✖✖"
+            slackSend(color: 'danger', message: "Échec du build: ${env.JOB_NAME} #${env.BUILD_NUMBER}")
         }
     }
 }
