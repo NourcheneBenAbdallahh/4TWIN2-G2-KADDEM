@@ -2,17 +2,17 @@ pipeline {
     agent any
 
     tools {
-        maven 'M2_HOME'
+        maven 'M2_HOME' // Ensure 'M2_HOME' is configured in Jenkins Global Tool Configuration
+    }
+
+    environment {
+        DOCKER_IMAGE_NAME = "oussemajridi/4twin2-g6-kaddem:latest" // Define Docker image name as an environment variable
+        DOCKERHUB_CREDENTIALS_ID = 'dockerhub-credentials' // Reference Docker Hub credentials
     }
 
     options {
         timeout(time: 30, unit: 'MINUTES')
-        buildDiscarder(logRotator(numToKeepStr: '5'))  // Garde seulement les 5 derniers builds
-    }
-
-    environment {
-        DOCKER_IMAGE_NAME = 'ebtihel352/ebtihel-kaddem'
-        COMPOSE_PROJECT_NAME = 'kaddem'  // Pour éviter les conflits de noms
+        buildDiscarder(logRotator(numToKeepStr: '10')) // Limit build history
     }
 
     stages {
@@ -21,10 +21,6 @@ pipeline {
                 checkout([
                     $class: 'GitSCM',
                     branches: [[name: 'ebtihel']],
-                    extensions: [
-                        [$class: 'CleanBeforeCheckout'],  // Nettoie le workspace avant
-                        [$class: 'RelativeTargetDirectory', relativeTargetDir: 'kaddem']  // Clone dans un sous-dossier
-                    ],
                     userRemoteConfigs: [[url: 'https://github.com/Nouunouu/DevopsProject.git']]
                 ])
             }
@@ -32,101 +28,59 @@ pipeline {
 
         stage('Code Build') {
             steps {
-                dir('kaddem/kaddem') {  // Se place dans le bon répertoire
-                    sh 'mvn clean package -DskipTests'
-                    archiveArtifacts artifacts: 'target/*.jar', fingerprint: true  // Archive le JAR
+                sh 'mvn clean install -DskipTests'
+            }
+        }
+
+        stage('Unit Tests') {
+            steps {
+                sh 'mvn test'
+            }
+            post {
+                always {
+                    junit '**/target/surefire-reports/*.xml' // Archive test results
                 }
             }
         }
 
-        stage('Testing') {
+        stage('Docker Compose') {
             steps {
                 dir('kaddem/kaddem') {
-                    sh 'mvn test'
-                    junit 'target/surefire-reports/**/*.xml'  // Publie les résultats des tests
+                    sh '''
+                        docker-compose down
+                        docker-compose build
+                        docker-compose up -d
+                        docker-compose ps
+                    '''
                 }
             }
         }
 
-        stage('Verify Docker') {
+        stage('Push Docker Image to Docker Hub') {
             steps {
-                script {
-                    try {
-                        sh '''
-                            # Vérifie Docker et Docker Compose
-                            docker --version || { echo "ERROR: Docker non installé"; exit 1; }
-                            docker compose version || { echo "ERROR: Docker Compose non installé"; exit 1; }
-
-                            # Vérifie la connexion au daemon Docker
-                            docker ps > /dev/null || { echo "ERROR: Impossible de se connecter au daemon Docker"; exit 1; }
-                        '''
-                    } catch (Exception e) {
-                        error "Échec de la vérification Docker: ${e.message}"
-                    }
-                }
-            }
-        }
-
-        stage('Docker Build & Deploy') {
-            steps {
-                dir('kaddem/kaddem') {
-                    script {
-                        try {
-                            // Build l'image Docker
-                            sh 'docker build -t ${DOCKER_IMAGE_NAME} .'
-
-                            // Déploiement avec Docker Compose
-                            sh '''
-                                docker compose down --remove-orphans || true
-                                docker compose build --no-cache
-                                docker compose up -d
-                                sleep 10  # Attente pour le démarrage des services
-                                docker compose ps
-                            '''
-                        } catch (Exception e) {
-                            error "Échec du déploiement Docker: ${e.message}"
-                        }
-                    }
-                }
-            }
-        }
-
-        stage('Push to Docker Hub') {
-            when {
-                expression { currentBuild.resultIsBetterOrEqualTo('SUCCESS') }
-            }
-            steps {
-                script {
-                    withCredentials([usernamePassword(
-                        credentialsId: 'dockerhub-creds',  // À créer dans Jenkins
-                        usernameVariable: 'DOCKERHUB_USER',
-                        passwordVariable: 'DOCKERHUB_PWD'
-                    )]) {
-                        sh '''
-                            echo "${DOCKERHUB_PWD}" | docker login -u "${DOCKERHUB_USER}" --password-stdin
-                            docker push ${DOCKER_IMAGE_NAME}
-                        '''
-                    }
+                withCredentials([usernamePassword(credentialsId: "${DOCKERHUB_CREDENTIALS_ID}", usernameVariable: 'DOCKERHUB_USERNAME', passwordVariable: 'DOCKERHUB_PASSWORD')]) {
+                    sh '''
+                        echo "Logging into Docker Hub..."
+                        echo "$DOCKERHUB_PASSWORD" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
+                        echo "Tagging image..."
+                        docker tag oussemajridi-4twin2-g6-kaddem:latest $DOCKER_IMAGE_NAME
+                        echo "Pushing image to Docker Hub..."
+                        docker push $DOCKER_IMAGE_NAME
+                    '''
                 }
             }
         }
     }
 
     post {
-        always {
-            echo "Nettoyage des ressources..."
-            script {
-                sh 'docker compose -f kaddem/kaddem/docker-compose.yml down --remove-orphans || true'
-                cleanWs()  // Nettoie le workspace
-            }
-        }
         success {
-            echo "✅ Pipeline exécuté avec succès ✅"
-            // slackSend(color: 'good', message: "Build ${env.BUILD_NUMBER} réussi")
+            echo 'Pipeline executed successfully!'
         }
         failure {
-            echo "❌ Échec du pipeline ❌"
-            // slackSend(color: 'danger', message: "Échec du build ${env.BUILD_NUMBER}")
+            echo 'Pipeline execution failed!'
+        }
+        always {
+            cleanWs() // Clean workspace after build
         }
     }
 }
