@@ -2,117 +2,79 @@ pipeline {
     agent any
 
     tools {
-        maven 'M2_HOME' // Assurez-vous que 'M2_HOME' est configuré dans Jenkins
-    }
-
-    options {
-        timeout(time: 30, unit: 'MINUTES')
+        maven 'M3'  // Utilisez le nom exact de votre installation Maven dans Jenkins
+        jdk 'jdk17' // Configurez un JDK 17 dans Jenkins
     }
 
     environment {
-        DOCKER_IMAGE_NAME = 'ebtihel352/4twin2-g6-kaddem:latest'
+        DOCKER_IMAGE_NAME = 'ebtihel352/4twin2-g6-kaddem'
+        DOCKER_TAG = "${env.BUILD_ID}-${env.GIT_COMMIT.substring(0,7)}"
     }
 
     stages {
         stage('Checkout Code') {
             steps {
-                script {
-                    try {
-                        checkout([
-                            $class: 'GitSCM',
-                            branches: [[name: 'ebtihel']],
-                            userRemoteConfigs: [[url: 'https://github.com/Nouunouu/DevopsProject.git']]
-                        ])
-                    } catch (Exception e) {
-                        error "Échec du checkout du code : ${e.message}"
-                    }
-                }
+                git branch: 'ebtihel',
+                    url: 'https://github.com/Nouunouu/DevopsProject.git',
+                    credentialsId: 'github-credentials' // Créez ces credentials dans Jenkins
             }
         }
 
-        stage('Code Build') {
+        stage('Build & Test') {
             steps {
-                script {
-                    try {
-                        sh 'mvn clean install -DskipTests'
-                    } catch (Exception e) {
-                        error "Échec de la compilation : ${e.message}"
-                    }
-                }
+                sh 'mvn clean package'
+                archiveArtifacts artifacts: 'target/*.jar', fingerprint: true
             }
         }
 
         stage('Build Docker Image') {
             steps {
                 script {
-                    try {
-                        sh '''
-                            echo "Construction de l'image Docker..."
-                            sudo docker build -t kaddem:latest .
-                        '''
-                    } catch (Exception e) {
-                        error "Échec de la construction de l'image Docker : ${e.message}"
+                    // Vérification que le JAR existe
+                    if (!fileExists('target/kaddem-0.0.1-SNAPSHOT.jar')) {
+                        error "Fichier JAR introuvable dans target/"
+                    }
+
+                    docker.build("${env.DOCKER_IMAGE_NAME}:${env.DOCKER_TAG}")
+                }
+            }
+        }
+
+        stage('Push to Docker Hub') {
+            steps {
+                script {
+                    docker.withRegistry('https://registry.hub.docker.com', 'dockerhub-credentials') {
+                        docker.image("${env.DOCKER_IMAGE_NAME}:${env.DOCKER_TAG}").push()
+                        docker.image("${env.DOCKER_IMAGE_NAME}:${env.DOCKER_TAG}").push('latest')
                     }
                 }
             }
         }
 
-        stage('Push Docker Image to Docker Hub') {
-            steps {
-                script {
-                    try {
-                        // Vérifier les images locales
-                        sh 'sudo docker images'
-
-                        // Connexion à Docker Hub
-                        withCredentials([usernamePassword(
-                            credentialsId: 'dockerhub-credentials',
-                            usernameVariable: 'DOCKERHUB_USERNAME',
-                            passwordVariable: 'DOCKERHUB_PASSWORD'
-                        )]) {
-                            sh '''
-                                echo "Connexion à Docker Hub..."
-                                echo "$DOCKERHUB_PASSWORD" | sudo docker login -u "$DOCKERHUB_USERNAME" --password-stdin
-                            '''
-                        }
-
-                        // Tagger l'image
-                        sh """
-                            echo "Taggage de l'image..."
-                            sudo docker tag kaddem:latest ${env.DOCKER_IMAGE_NAME}
-                        """
-
-                        // Pousser l'image
-                        sh """
-                            echo "Pousser l'image vers Docker Hub..."
-                            sudo docker push ${env.DOCKER_IMAGE_NAME}
-                        """
-                    } catch (Exception e) {
-                        error "Échec de la poussée de l'image Docker vers Docker Hub : ${e.message}"
-                    }
-                }
+        stage('Deploy to Staging') {
+            when {
+                branch 'ebtihel' // Déploiement conditionnel
             }
-        }
-
-        stage('Testing') {
             steps {
-                script {
-                    try {
-                        sh 'mvn test'
-                    } catch (Exception e) {
-                        error "Échec des tests : ${e.message}"
-                    }
-                }
+                sh '''
+                    docker-compose -f docker-compose.staging.yml down
+                    docker-compose -f docker-compose.staging.yml up -d
+                '''
             }
         }
     }
 
     post {
+        always {
+            cleanWs() // Nettoyage de l'espace de travail
+        }
         success {
-            echo "===== Pipeline exécuté avec succès ====="
+            slackSend color: 'good',
+                     message: "SUCCESS: Build ${env.BUILD_NUMBER} - ${env.JOB_NAME}"
         }
         failure {
-            echo "===== Échec de l'exécution du pipeline ====="
+            slackSend color: 'danger',
+                     message: "FAILED: Build ${env.BUILD_NUMBER} - ${env.JOB_NAME}"
         }
     }
 }
