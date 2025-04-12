@@ -39,23 +39,42 @@ pipeline {
                 }
             }
         }
-        stage('Docker Compose') {
-            steps {
-                script {
-                    try {
-                        sh '''
-                            docker-compose down
-                            docker-compose build
-                            docker-compose up -d
-                            docker-compose ps
-                        '''
-                    } catch (Exception e) {
-                        echo "Docker Compose failed: ${e.message}"
-                        throw e
-                    }
+stage('Push Docker Image to Docker Hub') {
+    steps {
+        script {
+            try {
+                // Définir le nom de l'image pour votre compte
+                def DOCKER_IMAGE_NAME = 'ebtihel352/4twin2-g6-kaddem:latest'
+
+                // Vérifier les images locales (débogage)
+                sh 'docker images'
+
+                // Connexion à Docker Hub
+                withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', usernameVariable: 'DOCKERHUB_USERNAME', passwordVariable: 'DOCKERHUB_PASSWORD')]) {
+                    sh '''
+                        echo "Connexion à Docker Hub..."
+                        echo "$DOCKERHUB_PASSWORD" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
+                    '''
                 }
+
+                // Tagger l'image
+                sh """
+                    echo "Taggage de l'image..."
+                    docker tag oussemajridi-4twin2-g6-kaddem:latest ${DOCKER_IMAGE_NAME}
+                """
+
+                // Pousser l'image
+                sh """
+                    echo "Pousser l'image vers Docker Hub..."
+                    docker push ${DOCKER_IMAGE_NAME}
+                """
+            } catch (Exception e) {
+                echo "Échec de la poussée de l'image Docker vers Docker Hub : ${e.message}"
+                throw e // Arrête le pipeline pour déboguer
             }
         }
+    }
+}
         stage('Testing') {
             steps {
                 script {
