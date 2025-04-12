@@ -1,8 +1,10 @@
 pipeline {
     agent any
+
     tools {
         maven 'M2_HOME'
     }
+
     options {
         timeout(time: 30, unit: 'MINUTES')
     }
@@ -24,14 +26,12 @@ pipeline {
                 }
             }
         }
+
         stage('Code Build') {
             steps {
                 script {
                     try {
-                        sh '''
-                            cd 4TWIN2-G6-KADDEM/kaddem/kaddem
-                            mvn clean install -DskipTests
-                        '''
+                        sh 'mvn clean install -DskipTests'
                     } catch (Exception e) {
                         echo "Code build failed: ${e.message}"
                         throw e
@@ -39,17 +39,15 @@ pipeline {
                 }
             }
         }
+
         stage('Testing') {
             steps {
                 script {
                     try {
-                        sh '''
-                            cd 4TWIN2-G6-KADDEM/kaddem/kaddem
-                            mvn test
-                        '''
+                        sh 'mvn test'
                     } catch (Exception e) {
                         echo "Tests failed: ${e.message}"
-                        // On ne relance pas l'erreur pour permettre à la pipeline de continuer
+                        // On continue même si les tests échouent
                     }
                 }
             }
