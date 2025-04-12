@@ -1,10 +1,9 @@
 pipeline {
     agent any
 
-    // Configuration modifiée pour utiliser les noms exacts de vos outils dans Jenkins
     tools {
-        maven 'M2_HOME'  // Utilisez le nom EXACT de votre installation Maven dans Jenkins
-        jdk 'JAVA_HOME'  // Utilisez le nom EXACT de votre JDK dans Jenkins
+        maven 'M2_HOME'  // Utilisez le nom exact de votre installation Maven dans Jenkins
+
     }
 
     environment {
@@ -17,7 +16,7 @@ pipeline {
             steps {
                 git branch: 'ebtihel',
                     url: 'https://github.com/Nouunouu/DevopsProject.git',
-                    credentialsId: 'github-credentials'
+                    credentialsId: 'github-credentials' // Créez ces credentials dans Jenkins
             }
         }
 
@@ -31,11 +30,11 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 script {
+                    // Vérification que le JAR existe
                     if (!fileExists('target/kaddem-0.0.1-SNAPSHOT.jar')) {
                         error "Fichier JAR introuvable dans target/"
                     }
 
-                    // Construction sans sudo (l'agent Jenkins doit avoir les droits Docker)
                     docker.build("${env.DOCKER_IMAGE_NAME}:${env.DOCKER_TAG}")
                 }
             }
@@ -51,17 +50,31 @@ pipeline {
                 }
             }
         }
+
+        stage('Deploy to Staging') {
+            when {
+                branch 'ebtihel' // Déploiement conditionnel
+            }
+            steps {
+                sh '''
+                    docker-compose -f docker-compose.staging.yml down
+                    docker-compose -f docker-compose.staging.yml up -d
+                '''
+            }
+        }
     }
 
     post {
         always {
-            cleanWs()
+            cleanWs() // Nettoyage de l'espace de travail
         }
         success {
-            echo 'Build réussi!'
+            slackSend color: 'good',
+                     message: "SUCCESS: Build ${env.BUILD_NUMBER} - ${env.JOB_NAME}"
         }
         failure {
-            echo 'Échec du build!'
+            slackSend color: 'danger',
+                     message: "FAILED: Build ${env.BUILD_NUMBER} - ${env.JOB_NAME}"
         }
     }
 }
