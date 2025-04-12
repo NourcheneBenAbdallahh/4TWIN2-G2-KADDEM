@@ -39,6 +39,24 @@ pipeline {
                 }
             }
         }
+        stage('Docker Compose') {
+                    steps {
+                        script {
+                            try {
+                                sh '''
+
+                                    sudo docker-compose down
+                                    sudo docker-compose build
+                                    sudo docker-compose up -d
+                                    sudo docker-compose ps
+                                '''
+                            } catch (Exception e) {
+                                echo "Docker Compose failed: ${e.message}"
+                                throw e // Rethrow to fail the pipeline if Docker Compose fails
+                            }
+                        }
+                    }
+                }
 
         stage('Testing') {
             steps {
