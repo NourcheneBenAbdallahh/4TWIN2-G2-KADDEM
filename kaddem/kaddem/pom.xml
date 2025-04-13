@@ -76,9 +76,7 @@
 		</repository>
 	</distributionManagement>
 	
-	<distributionManagement>
-
-</distributionManagement>
+	
 
     <build>
         <plugins>
