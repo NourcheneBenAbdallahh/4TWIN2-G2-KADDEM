@@ -43,7 +43,9 @@ class EquipeServiceImplTest {
         etudiant.setNomE("John Doe");
 
         contrat = new Contrat();
-        contrat.setDateFinContrat(new Date(System.currentTimeMillis() - 10000000000L));  // A contract older than 1 year
+        Calendar cal = Calendar.getInstance();
+        cal.add(Calendar.YEAR, -2); // Contract more than 1 year ago
+        contrat.setDateFinContrat(cal.getTime());
         contrat.setArchive(false);
     }
 
@@ -80,6 +82,7 @@ class EquipeServiceImplTest {
 
         equipeService.deleteEquipe(1);
 
+        verify(equipeRepository, times(1)).findById(1);
         verify(equipeRepository, times(1)).delete(equipe);
     }
 
@@ -98,10 +101,7 @@ class EquipeServiceImplTest {
     void testRetrieveEquipe_NotFound() {
         when(equipeRepository.findById(999)).thenReturn(Optional.empty());
 
-        assertThrows(NoSuchElementException.class, () -> {
-            equipeService.retrieveEquipe(999);
-        });
-
+        assertThrows(NoSuchElementException.class, () -> equipeService.retrieveEquipe(999));
         verify(equipeRepository, times(1)).findById(999);
     }
 
@@ -118,15 +118,24 @@ class EquipeServiceImplTest {
 
     @Test
     void testEvoluerEquipes() {
-        Set<Contrat> contrats = new HashSet<>();
-        contrats.add(contrat);
-        etudiant.setContrats(contrats);
+        // Setup: 3 students with valid old contracts
+        List<Etudiant> etudiants = new ArrayList<>();
+        for (int i = 0; i < 3; i++) {
+            Contrat oldContrat = new Contrat();
+            Calendar cal = Calendar.getInstance();
+            cal.add(Calendar.YEAR, -2);
+            oldContrat.setDateFinContrat(cal.getTime());
+            oldContrat.setArchive(false);
 
-        Set<Etudiant> etudiants = new HashSet<>();
-        etudiants.add(etudiant);
+            Etudiant etu = new Etudiant();
+            etu.setIdEtudiant(i + 1);
+            etu.setNomE("Etudiant" + i);
+            etu.setContrats(Set.of(oldContrat));
 
-        equipe.setEtudiants(etudiants);
+            etudiants.add(etu);
+        }
 
+        equipe.setEtudiants(new HashSet<>(etudiants));
         when(equipeRepository.findAll()).thenReturn(Collections.singletonList(equipe));
         when(equipeRepository.save(any(Equipe.class))).thenReturn(equipe);
 
@@ -138,21 +147,16 @@ class EquipeServiceImplTest {
 
     @Test
     void testEvoluerEquipes_NoEvolution() {
-        contrat.setDateFinContrat(new Date(System.currentTimeMillis()));  // Contract too recent to trigger evolution
-        Set<Contrat> contrats = new HashSet<>();
-        contrats.add(contrat);
-        etudiant.setContrats(contrats);
-
-        Set<Etudiant> etudiants = new HashSet<>();
-        etudiants.add(etudiant);
-
-        equipe.setEtudiants(etudiants);
+        // Contract is recent → no evolution
+        contrat.setDateFinContrat(new Date());
+        etudiant.setContrats(Set.of(contrat));
+        equipe.setEtudiants(Set.of(etudiant));
 
         when(equipeRepository.findAll()).thenReturn(Collections.singletonList(equipe));
 
         equipeService.evoluerEquipes();
 
-        assertEquals(Niveau.JUNIOR, equipe.getNiveau());  // No evolution should happen
+        assertEquals(Niveau.JUNIOR, equipe.getNiveau());  // Should remain unchanged
         verify(equipeRepository, never()).save(equipe);
     }
 }
