@@ -56,6 +56,15 @@ pipeline {
             }
         }
 
+
+           stage('SonarQube Analysis') {
+                    steps {
+                        sh 'mvn sonar:sonar -Dsonar.token=b0462e69ce7ebc19c5f62efc9dd37cfa4af3ba83 -Dmaven.test.skip=true'
+
+
+                    }
+                }
+
         stage('Push Docker Image to Docker Hub') {
             steps {
                 script {
@@ -92,6 +101,9 @@ pipeline {
                 }
             }
         }
+
+
+
 
 stage('Deploy to Nexus') {
     steps {
