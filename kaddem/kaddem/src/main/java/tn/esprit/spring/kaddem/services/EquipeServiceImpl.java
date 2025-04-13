@@ -62,44 +62,49 @@ public class EquipeServiceImpl implements IEquipeService {
     }
 
     public void evoluerEquipe(Equipe equipe) {
-        if (equipe.getNiveau() == null) return;
+        if (equipe.getNiveau() == null) {
+            log.warn("Equipe {} has no level set, skipping evolution", equipe.getNomEquipe());
+            return;
+        }
 
-        if (equipe.getNiveau().equals(Niveau.JUNIOR) || equipe.getNiveau().equals(Niveau.SENIOR)) {
-            log.info("Evaluating equipe: {} with current level: {}", equipe.getNomEquipe(), equipe.getNiveau());
+        log.info("Evaluating equipe: {} with current level: {}", equipe.getNomEquipe(), equipe.getNiveau());
 
-            List<Etudiant> etudiants = equipe.getEtudiants() != null ? new ArrayList<>(equipe.getEtudiants()) : new ArrayList<>();
-            int nbEtudiantsAvecContratsActifs = 0;
+        List<Etudiant> etudiants = equipe.getEtudiants() != null ? new ArrayList<>(equipe.getEtudiants()) : new ArrayList<>();
+        int nbEtudiantsAvecContratsActifs = 0;
 
-            for (Etudiant etudiant : etudiants) {
-                Set<Contrat> contrats = etudiant.getContrats() != null ? etudiant.getContrats() : new HashSet<>();
+        for (Etudiant etudiant : etudiants) {
+            Set<Contrat> contrats = etudiant.getContrats() != null ? etudiant.getContrats() : new HashSet<>();
 
-                for (Contrat contrat : contrats) {
-                    if (contrat.getDateFinContrat() != null && !contrat.getArchive()) {
-                        Date dateSysteme = new Date();
-                        long diffInTime = dateSysteme.getTime() - contrat.getDateFinContrat().getTime();
-                        long diffInYears = diffInTime / (1000L * 60 * 60 * 24 * 365);
+            for (Contrat contrat : contrats) {
+                if (contrat.getDateFinContrat() != null && !contrat.getArchive()) {
+                    Date dateSysteme = new Date();
+                    long diffInTime = dateSysteme.getTime() - contrat.getDateFinContrat().getTime();
+                    long diffInYears = diffInTime / (1000L * 60 * 60 * 24 * 365);
 
-                        if (diffInYears > 1) {
-                            nbEtudiantsAvecContratsActifs++;
-                            log.info("Student {} has an active contract older than 1 year", etudiant.getNomE());
-                            break;
-                        }
+                    if (diffInYears > 1) {
+                        nbEtudiantsAvecContratsActifs++;
+                        log.info("Student {} has an active contract older than 1 year", etudiant.getNomE());
+                        break;
                     }
                 }
-
-                if (nbEtudiantsAvecContratsActifs >= 3) break;
             }
 
             if (nbEtudiantsAvecContratsActifs >= 3) {
-                if (equipe.getNiveau() == Niveau.JUNIOR) {
-                    equipe.setNiveau(Niveau.SENIOR);
-                    equipeRepository.save(equipe);
-                    log.info("Equipe ID {} evolved from JUNIOR to SENIOR", equipe.getIdEquipe());
-                } else if (equipe.getNiveau() == Niveau.SENIOR) {
-                    equipe.setNiveau(Niveau.EXPERT);
-                    equipeRepository.save(equipe);
-                    log.info("Equipe ID {} evolved from SENIOR to EXPERT", equipe.getIdEquipe());
-                }
+                log.info("Equipe {} has sufficient students with active contracts older than 1 year, triggering evolution", equipe.getNomEquipe());
+                break;
+            }
+        }
+
+        // Evolving the team based on the conditions
+        if (nbEtudiantsAvecContratsActifs >= 3) {
+            if (equipe.getNiveau() == Niveau.JUNIOR) {
+                equipe.setNiveau(Niveau.SENIOR);
+                equipeRepository.save(equipe);
+                log.info("Equipe ID {} evolved from JUNIOR to SENIOR", equipe.getIdEquipe());
+            } else if (equipe.getNiveau() == Niveau.SENIOR) {
+                equipe.setNiveau(Niveau.EXPERT);
+                equipeRepository.save(equipe);
+                log.info("Equipe ID {} evolved from SENIOR to EXPERT", equipe.getIdEquipe());
             }
         }
     }

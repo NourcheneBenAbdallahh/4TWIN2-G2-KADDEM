@@ -123,7 +123,7 @@ class EquipeServiceImplTest {
         for (int i = 0; i < 3; i++) {
             Contrat oldContrat = new Contrat();
             Calendar cal = Calendar.getInstance();
-            cal.add(Calendar.YEAR, -2);
+            cal.add(Calendar.YEAR, -2); // 2 years ago
             oldContrat.setDateFinContrat(cal.getTime());
             oldContrat.setArchive(false);
 
@@ -141,14 +141,14 @@ class EquipeServiceImplTest {
 
         equipeService.evoluerEquipes();
 
-        assertEquals(Niveau.SENIOR, equipe.getNiveau());
+        assertEquals(Niveau.SENIOR, equipe.getNiveau());  // Should evolve to SENIOR
         verify(equipeRepository, times(1)).save(equipe);
     }
 
     @Test
     void testEvoluerEquipes_NoEvolution() {
-        // Contract is recent → no evolution
-        contrat.setDateFinContrat(new Date());
+        // Setup: Contract is recent → no evolution
+        contrat.setDateFinContrat(new Date());  // Recent contract date
         etudiant.setContrats(Set.of(contrat));
         equipe.setEtudiants(Set.of(etudiant));
 
@@ -156,7 +156,35 @@ class EquipeServiceImplTest {
 
         equipeService.evoluerEquipes();
 
-        assertEquals(Niveau.JUNIOR, equipe.getNiveau());  // Should remain unchanged
-        verify(equipeRepository, never()).save(equipe);
+        assertEquals(Niveau.JUNIOR, equipe.getNiveau());  // Should remain at JUNIOR
+        verify(equipeRepository, never()).save(equipe);  // Save should not be called
+    }
+
+    @Test
+    void testEvoluerEquipe_NotEnoughStudents() {
+        // Setup: Only 2 students with contracts older than 1 year
+        List<Etudiant> etudiants = new ArrayList<>();
+        for (int i = 0; i < 2; i++) {
+            Contrat oldContrat = new Contrat();
+            Calendar cal = Calendar.getInstance();
+            cal.add(Calendar.YEAR, -2); // 2 years ago
+            oldContrat.setDateFinContrat(cal.getTime());
+            oldContrat.setArchive(false);
+
+            Etudiant etu = new Etudiant();
+            etu.setIdEtudiant(i + 1);
+            etu.setNomE("Etudiant" + i);
+            etu.setContrats(Set.of(oldContrat));
+
+            etudiants.add(etu);
+        }
+
+        equipe.setEtudiants(new HashSet<>(etudiants));
+        when(equipeRepository.findAll()).thenReturn(Collections.singletonList(equipe));
+
+        equipeService.evoluerEquipes();
+
+        assertEquals(Niveau.JUNIOR, equipe.getNiveau());  // No evolution due to insufficient students
+        verify(equipeRepository, never()).save(equipe);  // Save should not be called
     }
 }
