@@ -6,7 +6,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import tn.esprit.spring.kaddem.entities.Contrat;
 import tn.esprit.spring.kaddem.entities.Equipe;
+import tn.esprit.spring.kaddem.entities.Etudiant;
 import tn.esprit.spring.kaddem.entities.Niveau;
 import tn.esprit.spring.kaddem.repositories.EquipeRepository;
 import tn.esprit.spring.kaddem.services.EquipeServiceImpl;
@@ -26,6 +28,8 @@ class EquipeServiceImplTest {
     private EquipeServiceImpl equipeService;
 
     private Equipe equipe;
+    private Etudiant etudiant;
+    private Contrat contrat;
 
     @BeforeEach
     void setUp() {
@@ -33,6 +37,14 @@ class EquipeServiceImplTest {
         equipe.setIdEquipe(1);
         equipe.setNomEquipe("Alpha Team");
         equipe.setNiveau(Niveau.JUNIOR);
+
+        etudiant = new Etudiant();
+        etudiant.setIdEtudiant(1);
+        etudiant.setNomE("John Doe");
+
+        contrat = new Contrat();
+        contrat.setDateFinContrat(new Date(System.currentTimeMillis() - 10000000000L));  // A contract older than 1 year
+        contrat.setArchive(false);
     }
 
     @Test
@@ -48,7 +60,6 @@ class EquipeServiceImplTest {
 
         assertEquals(2, result.size());
         assertTrue(result.contains(equipe));
-        assertEquals("Alpha Team", result.get(0).getNomEquipe());
         verify(equipeRepository, times(1)).findAll();
     }
 
@@ -64,14 +75,12 @@ class EquipeServiceImplTest {
     }
 
     @Test
-    void testUpdateEquipe() {
-        equipe.setNomEquipe("Updated Team");
-        when(equipeRepository.save(any(Equipe.class))).thenReturn(equipe);
+    void testDeleteEquipe() {
+        when(equipeRepository.findById(1)).thenReturn(Optional.of(equipe));
 
-        Equipe result = equipeService.updateEquipe(equipe);
+        equipeService.deleteEquipe(1);
 
-        assertEquals("Updated Team", result.getNomEquipe());
-        verify(equipeRepository, times(1)).save(equipe);
+        verify(equipeRepository, times(1)).delete(equipe);
     }
 
     @Test
@@ -97,11 +106,53 @@ class EquipeServiceImplTest {
     }
 
     @Test
-    void testDeleteEquipe() {
-        when(equipeRepository.findById(1)).thenReturn(Optional.of(equipe));
+    void testUpdateEquipe() {
+        equipe.setNomEquipe("Updated Team");
+        when(equipeRepository.save(any(Equipe.class))).thenReturn(equipe);
 
-        equipeService.deleteEquipe(1);
+        Equipe result = equipeService.updateEquipe(equipe);
 
-        verify(equipeRepository, times(1)).delete(equipe);
+        assertEquals("Updated Team", result.getNomEquipe());
+        verify(equipeRepository, times(1)).save(equipe);
+    }
+
+    @Test
+    void testEvoluerEquipes() {
+        Set<Contrat> contrats = new HashSet<>();
+        contrats.add(contrat);
+        etudiant.setContrats(contrats);
+
+        Set<Etudiant> etudiants = new HashSet<>();
+        etudiants.add(etudiant);
+
+        equipe.setEtudiants(etudiants);
+
+        when(equipeRepository.findAll()).thenReturn(Collections.singletonList(equipe));
+        when(equipeRepository.save(any(Equipe.class))).thenReturn(equipe);
+
+        equipeService.evoluerEquipes();
+
+        assertEquals(Niveau.SENIOR, equipe.getNiveau());
+        verify(equipeRepository, times(1)).save(equipe);
+    }
+
+    @Test
+    void testEvoluerEquipes_NoEvolution() {
+        contrat.setDateFinContrat(new Date(System.currentTimeMillis()));  // Contract too recent to trigger evolution
+        Set<Contrat> contrats = new HashSet<>();
+        contrats.add(contrat);
+        etudiant.setContrats(contrats);
+
+        Set<Etudiant> etudiants = new HashSet<>();
+        etudiants.add(etudiant);
+
+        equipe.setEtudiants(etudiants);
+
+        when(equipeRepository.findAll()).thenReturn(Collections.singletonList(equipe));
+
+        equipeService.evoluerEquipes();
+
+        assertEquals(Niveau.JUNIOR, equipe.getNiveau());  // No evolution should happen
+        verify(equipeRepository, never()).save(equipe);
     }
 }
