@@ -97,7 +97,31 @@ pipeline {
                 sh 'mvn sonar:sonar -Dsonar.token=sqa_3beb746071c960af505c36bb900bb23b49019ea4 -Dmaven.test.skip=true'
             }
         }
-
+stage('Deploy to Nexus') {
+    steps {
+        script {
+            try {
+                withCredentials([usernamePassword(
+                    credentialsId: 'nexus-credentials',  // ID des credentials Nexus dans Jenkins
+                    usernameVariable: 'NEXUS_USER',
+                    passwordVariable: 'NEXUS_PASSWORD'
+                )]) {
+                    sh """
+                        mvn deploy \
+                        -DskipTests \
+                        -DaltDeploymentRepository=nexus-releases::default::http://localhost:8081/repository/maven-releases/ \
+                        -DrepositoryId=nexus-releases \
+                        -Durl=http://localhost:8081/repository/maven-releases/ \
+                        -Dusername=${NEXUS_USER} \
+                        -Dpassword=${NEXUS_PASSWORD}
+                    """
+                }
+            } catch (Exception e) {
+                error "Échec du déploiement Nexus: ${e.message}"
+            }
+        }
+    }
+}
         stage('Testing') {
             steps {
                 script {
