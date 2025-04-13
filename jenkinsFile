@@ -92,6 +92,18 @@ pipeline {
                 }
             }
         }
+        // Dans Jenkinsfile
+        stage('Analyse SonarQube') {
+            steps {
+                withSonarQubeEnv(credentialsId: 'sonarqube-token', installationName: 'SonarQube-Server') {
+                    sh """
+                        sonar-scanner \
+                        -Dsonar.projectKey=mon-projet \
+                        -Dsonar.login=${env.SONAR_AUTH_TOKEN}
+                    """
+                }
+            }
+        }
 
         stage('Testing') {
             steps {
