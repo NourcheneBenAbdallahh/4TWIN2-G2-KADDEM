@@ -77,7 +77,7 @@ public class EquipeServiceImpl implements IEquipeService {
 
                         if ((contrat.getArchive() == false) && (difference_In_Years > 1)) {
                             nbEtudiantsAvecContratsActifs++;
-                            log.info("Student {} has an active contract older than 1 year", etudiant.getNom());
+                            log.info("Student {} has an active contract older than 1 year", etudiant.getNomE());
                             break;
                         }
                     }
