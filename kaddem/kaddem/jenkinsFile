@@ -6,7 +6,9 @@ pipeline {
     options {
         timeout(time: 30, unit: 'MINUTES')
     }
-
+    environment {
+        EXAMPLE_VAR = 'dev'
+    }
     stages {
         stage('Checkout Code') {
             steps {
