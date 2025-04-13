@@ -92,11 +92,7 @@ pipeline {
                 }
             }
         }
-   stage('SonarQube Analysis') {
-            steps {
-                sh 'mvn sonar:sonar -Dsonar.token=sqa_3beb746071c960af505c36bb900bb23b49019ea4 -Dmaven.test.skip=true'
-            }
-        }
+
 stage('Deploy to Nexus') {
     steps {
         script {
