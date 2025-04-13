@@ -12,6 +12,16 @@ public class Departement implements Serializable{
     @Id
     @GeneratedValue(strategy= GenerationType.IDENTITY)
     private Integer idDepart;
+
+    @Override
+    public String toString() {
+        return "Departement{" +
+                "idDepart=" + idDepart +
+                ", nomDepart='" + nomDepart + '\'' +
+                ", etudiants=" + etudiants +
+                '}';
+    }
+
     private String nomDepart;
     @OneToMany(mappedBy="departement")
     @JsonIgnore
