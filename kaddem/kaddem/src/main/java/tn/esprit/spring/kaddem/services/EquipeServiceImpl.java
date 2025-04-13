@@ -9,7 +9,9 @@ import tn.esprit.spring.kaddem.entities.Etudiant;
 import tn.esprit.spring.kaddem.entities.Niveau;
 import tn.esprit.spring.kaddem.repositories.EquipeRepository;
 
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -17,7 +19,7 @@ import java.util.Set;
 @AllArgsConstructor
 @Service
 public class EquipeServiceImpl implements IEquipeService {
-    EquipeRepository equipeRepository;
+    private final EquipeRepository equipeRepository;
 
     public List<Equipe> retrieveAllEquipes() {
         log.info("Retrieving all equipes");
@@ -61,27 +63,38 @@ public class EquipeServiceImpl implements IEquipeService {
     public void evoluerEquipes() {
         log.info("Running scheduled evolution for equipes...");
         List<Equipe> equipes = (List<Equipe>) equipeRepository.findAll();
+
         for (Equipe equipe : equipes) {
-            if ((equipe.getNiveau().equals(Niveau.JUNIOR)) || (equipe.getNiveau().equals(Niveau.SENIOR))) {
+            if (equipe.getNiveau().equals(Niveau.JUNIOR) || equipe.getNiveau().equals(Niveau.SENIOR)) {
                 log.info("Evaluating equipe: {} with current level: {}", equipe.getNomEquipe(), equipe.getNiveau());
 
-                List<Etudiant> etudiants = (List<Etudiant>) equipe.getEtudiants();
-                Integer nbEtudiantsAvecContratsActifs = 0;
+                // Check for null or empty etudiants list
+                List<Etudiant> etudiants = equipe.getEtudiants() != null ? new ArrayList<>(equipe.getEtudiants()) : new ArrayList<>();
+                int nbEtudiantsAvecContratsActifs = 0;
 
                 for (Etudiant etudiant : etudiants) {
-                    Set<Contrat> contrats = etudiant.getContrats();
-                    for (Contrat contrat : contrats) {
-                        Date dateSysteme = new Date();
-                        long difference_In_Time = dateSysteme.getTime() - contrat.getDateFinContrat().getTime();
-                        long difference_In_Years = (difference_In_Time / (1000l * 60 * 60 * 24 * 365));
+                    // Check for null contrats
+                    Set<Contrat> contrats = etudiant.getContrats() != null ? etudiant.getContrats() : new HashSet<>();
 
-                        if ((contrat.getArchive() == false) && (difference_In_Years > 1)) {
-                            nbEtudiantsAvecContratsActifs++;
-                            log.info("Student {} has an active contract older than 1 year", etudiant.getNomE());
-                            break;
+                    for (Contrat contrat : contrats) {
+                        // Ensure contrat and dateFinContrat are not null
+                        if (contrat.getDateFinContrat() != null && !contrat.getArchive()) {
+                            Date dateSysteme = new Date();
+                            long differenceInTime = dateSysteme.getTime() - contrat.getDateFinContrat().getTime();
+                            long differenceInYears = differenceInTime / (1000L * 60 * 60 * 24 * 365);
+
+                            if (differenceInYears > 1) {
+                                nbEtudiantsAvecContratsActifs++;
+                                log.info("Student {} has an active contract older than 1 year", etudiant.getNomE());
+                                // Stop checking further contracts for this student once we have one valid contract
+                                break;
+                            }
                         }
                     }
-                    if (nbEtudiantsAvecContratsActifs >= 3) break;
+
+                    if (nbEtudiantsAvecContratsActifs >= 3) {
+                        break; // No need to continue if we already have 3 students with active contracts
+                    }
                 }
 
                 if (nbEtudiantsAvecContratsActifs >= 3) {
@@ -89,13 +102,10 @@ public class EquipeServiceImpl implements IEquipeService {
                         equipe.setNiveau(Niveau.SENIOR);
                         equipeRepository.save(equipe);
                         log.info("Equipe ID {} evolved from JUNIOR to SENIOR", equipe.getIdEquipe());
-                        break;
-                    }
-                    if (equipe.getNiveau().equals(Niveau.SENIOR)) {
+                    } else if (equipe.getNiveau().equals(Niveau.SENIOR)) {
                         equipe.setNiveau(Niveau.EXPERT);
                         equipeRepository.save(equipe);
                         log.info("Equipe ID {} evolved from SENIOR to EXPERT", equipe.getIdEquipe());
-                        break;
                     }
                 }
             }
