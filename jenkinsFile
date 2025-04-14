@@ -56,32 +56,22 @@ pipeline {
             }
         }
 
-
         stage('Push Docker Image to Docker Hub') {
             steps {
                 script {
                     try {
-                        // Définir le nom de l'image pour votre compte
                         def DOCKER_IMAGE_NAME = 'ebtihel352/4twin2-g6-kaddem:latest'
-
-                        // Vérifier les images locales
                         sh 'docker images'
-
-                        // Connexion à Docker Hub
                         withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', usernameVariable: 'DOCKERHUB_USERNAME', passwordVariable: 'DOCKERHUB_PASSWORD')]) {
                             sh '''
                                 echo "Connexion à Docker Hub..."
                                 echo "$DOCKERHUB_PASSWORD" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
                             '''
                         }
-
-                        // Tagger l'image
                         sh """
                             echo "Taggage de l'image..."
                             docker tag kaddem:latest ${DOCKER_IMAGE_NAME}
                         """
-
-                        // Pousser l'image
                         sh """
                             echo "Pousser l'image vers Docker Hub..."
                             docker push ${DOCKER_IMAGE_NAME}
@@ -94,16 +84,7 @@ pipeline {
             }
         }
 
-/*
-   stage('SonarQube Analysis') {
-            steps {
-                sh 'mvn sonar:sonar -Dsonar.token=sqa_9c74d47928939c31d3c07db41b8c124632bcd08e -Dmaven.test.skip=true'
-
-
-            }
-        }
-*/
- stage("Publish to Nexus Repository Manager") {
+        stage('Publish to Nexus Repository Manager') {
             steps {
                 script {
                     pom = readMavenPom file: "pom.xml";
@@ -117,16 +98,16 @@ pipeline {
                             nexusVersion: 'nexus3',
                             protocol: 'http',
                             nexusUrl: '192.168.33.10:8081',
-                            groupId:'pom.tn.esprit.spring',
-                            version: 'pom.0.0.1-SNAPSHOT',
-                            repository:'maven-central-repository',
+                            groupId: pom.groupId,
+                            version: pom.version,
+                            repository: 'maven-central-repository',
                             credentialsId: 'NEXUS_CRED',
                             artifacts: [
-                                [artifactId: 'pom.kaddem',
+                                [artifactId: pom.artifactId,
                                 classifier: '',
                                 file: artifactPath,
                                 type: pom.packaging],
-                                [artifactId: 'pom.kaddem',
+                                [artifactId: pom.artifactId,
                                 classifier: '',
                                 file: "pom.xml",
                                 type: "pom"]
@@ -138,7 +119,7 @@ pipeline {
                 }
             }
         }
-    }
+
         stage('Testing') {
             steps {
                 script {
@@ -152,8 +133,6 @@ pipeline {
             }
         }
     }
-
-
 
     post {
         success {
