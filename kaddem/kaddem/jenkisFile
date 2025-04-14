@@ -64,8 +64,8 @@ pipeline {
                             # Naviguer vers le répertoire contenant le Dockerfile
                             cd kaddem/kaddem
                             # Construire l'image Docker
-                            docker-compose down
-                            docker-compose up --build
+                            docker compose down
+                            docker compose up --build
                         '''
                     } catch (Exception e) {
                         echo "Failed to build Docker image: ${e.message}"
