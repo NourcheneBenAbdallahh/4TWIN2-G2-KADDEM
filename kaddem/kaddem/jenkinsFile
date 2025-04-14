@@ -94,7 +94,9 @@ pipeline {
                             cd kaddem/kaddem
                             # Construire l'image Docker
                             docker compose down
-                            docker compose up --build
+                            docker compose build
+                            docker compose up -d
+                            docker compose ps
                         '''
                     } catch (Exception e) {
                         echo "Failed to build Docker image: ${e.message}"
