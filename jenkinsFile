@@ -9,25 +9,23 @@ pipeline {
         timeout(time: 30, unit: 'MINUTES')
     }
 
-    stage('Checkout Code') {
-        steps {
-            script {
-                try {
-                    checkout([
-                        $class: 'GitSCM',
-                        branches: [[name: '*/ebtihel']],
-                        userRemoteConfigs: [[
-                            url: 'https://github.com/NourcheneBenAbdallahh/4TWIN2-G2-KADDEM.git'
-                        ]]
-                    ])
-                } catch (Exception e) {
-                    echo "Échec du checkout du code : ${e.message}"
-                    throw e
+    stages {
+        stage('Checkout Code') {
+            steps {
+                script {
+                    try {
+                        checkout([
+                            $class: 'GitSCM',
+                            branches: [[name: 'ebtihel']],
+                            userRemoteConfigs: [[url: 'https://github.com/Nouunouu/DevopsProject.git']]
+                        ])
+                    } catch (Exception e) {
+                        echo "Échec du checkout du code : ${e.message}"
+                        throw e
+                    }
                 }
             }
         }
-    }
-
 
         stage('Code Build') {
             steps {
