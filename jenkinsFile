@@ -104,6 +104,14 @@ pipeline {
         }
 
 
+
+stage('Deploy to Nexus') {
+            steps {
+                sh 'mvn deploy -DskipTests -s /usr/share/maven/conf/settings.xml'
+            }
+        }
+
+
         stage('Testing') {
             steps {
                 script {
