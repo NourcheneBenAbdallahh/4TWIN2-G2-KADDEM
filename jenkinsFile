@@ -1,155 +1,18 @@
-pipeline {
-    agent any
-
-    tools {
-        maven 'M2_HOME' // Assurez-vous que 'M2_HOME' est configuré dans Jenkins
-    }
-
-    options {
-        timeout(time: 30, unit: 'MINUTES')
-    }
-
-    stages {
-        stage('Checkout Code') {
-            steps {
-                script {
-                    try {
-                        checkout([
-                            $class: 'GitSCM',
-                            branches: [[name: '*/ebtihel']],
-                            userRemoteConfigs: [[url: 'https://github.com/Nouunouu/DevopsProject.git/4TWIN2-G2-KADDEM.git']]
-                        ])
-                    } catch (Exception e) {
-                        echo "Échec du checkout du code : ${e.message}"
-                        throw e
-                    }
-                }
-            }
-        }
-
-        stage('Code Build') {
-            steps {
-                script {
-                    try {
-                        sh 'mvn clean install -DskipTests'
-                    } catch (Exception e) {
-                        echo "Échec de la compilation : ${e.message}"
-                        throw e
-                    }
-                }
-            }
-        }
-
-        stage('Build Docker Image') {
-            steps {
-                script {
-                    try {
-                        sh '''
-                            echo "Construction de l'image Docker..."
-                            docker build -t kaddem:latest .
-                        '''
-                    } catch (Exception e) {
-                        echo "Échec de la construction de l'image Docker : ${e.message}"
-                        throw e
-                    }
-                }
-            }
-        }
-
-
-        stage('Push Docker Image to Docker Hub') {
-            steps {
-                script {
-                    try {
-                        // Définir le nom de l'image pour votre compte
-                        def DOCKER_IMAGE_NAME = 'ebtihel352/4twin2-g6-kaddem:latest'
-
-                        // Vérifier les images locales
-                        sh 'docker images'
-
-                        // Connexion à Docker Hub
-                        withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', usernameVariable: 'DOCKERHUB_USERNAME', passwordVariable: 'DOCKERHUB_PASSWORD')]) {
-                            sh '''
-                                echo "Connexion à Docker Hub..."
-                                echo "$DOCKERHUB_PASSWORD" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
-                            '''
-                        }
-
-                        // Tagger l'image
-                        sh """
-                            echo "Taggage de l'image..."
-                            docker tag kaddem:latest ${DOCKER_IMAGE_NAME}
-                        """
-
-                        // Pousser l'image
-                        sh """
-                            echo "Pousser l'image vers Docker Hub..."
-                            docker push ${DOCKER_IMAGE_NAME}
-                        """
-                    } catch (Exception e) {
-                        echo "Échec de la poussée de l'image Docker vers Docker Hub : ${e.message}"
-                        throw e
-                    }
-                }
-            }
-        }
-
-
-   stage('SonarQube Analysis') {
-            steps {
-                sh 'mvn sonar:sonar -Dsonar.token=e3511678907244c279b0c4701dced7826e475639 -Dmaven.test.skip=true'
-
-
-            }
-        }
-
-stage('Deploy to Nexus') {
+stage('Checkout Code') {
     steps {
         script {
             try {
-                withCredentials([usernamePassword(
-                    credentialsId: 'nexus-credentials',  // ID des credentials Nexus dans Jenkins
-                    usernameVariable: 'NEXUS_USER',
-                    passwordVariable: 'NEXUS_PASSWORD'
-                )]) {
-                    sh """
-                        mvn deploy \
-                        -DskipTests \
-                        -DaltDeploymentRepository=nexus-releases::default::http://localhost:8081/repository/maven-releases/ \
-                        -DrepositoryId=nexus-releases \
-                        -Durl=http://localhost:8081/repository/maven-releases/ \
-                        -Dusername=${NEXUS_USER} \
-                        -Dpassword=${NEXUS_PASSWORD}
-                    """
-                }
+                checkout([
+                    $class: 'GitSCM',
+                    branches: [[name: '*/ebtihel']],
+                    userRemoteConfigs: [[
+                        url: 'https://github.com/NourcheneBenAbdallahh/4TWIN2-G2-KADDEM.git'
+                    ]]
+                ])
             } catch (Exception e) {
-                error "Échec du déploiement Nexus: ${e.message}"
+                echo "Échec du checkout du code : ${e.message}"
+                throw e
             }
-        }
-    }
-}
-        stage('Testing') {
-            steps {
-                script {
-                    try {
-                        sh 'mvn test'
-                    } catch (Exception e) {
-                        echo "Échec des tests : ${e.message}"
-                        throw e
-                    }
-                }
-            }
-        }
-    }
-
-
-
-    post {
-        success {
-            echo "===== Pipeline exécuté avec succès ====="
-        }
-        failure {
-            echo "===== Échec de l'exécution du pipeline ====="
         }
     }
 }
