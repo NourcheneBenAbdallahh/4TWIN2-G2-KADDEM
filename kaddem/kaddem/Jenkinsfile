@@ -45,13 +45,20 @@ pipeline {
         }
 
        stage('Deploy Prometheus') {
-            steps {
-                dir('kaddem/kaddem') {
-                          sh 'docker compose up -d prometheus'
-
-                }
+    steps {
+        script {
+            def containerExists = sh(script: "docker ps -a --format '{{.Names}}' | grep -w prometheus || true", returnStdout: true).trim()
+            if (containerExists) {
+                echo "Conteneur 'prometheus' déjà existant, suppression en cours..."
+                sh 'docker rm -f prometheus'
             }
         }
+        dir('kaddem/kaddem') {
+            sh 'docker compose up -d prometheus'
+        }
+    }
+}
+
 
       stage('Build Docker Image') {
             steps {
