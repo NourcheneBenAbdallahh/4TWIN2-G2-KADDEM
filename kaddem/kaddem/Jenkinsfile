@@ -8,7 +8,6 @@ pipeline {
     environment {
         SONARQUBE = 'SonarServer'  // Nom défini dans Jenkins > SonarQube servers
     DOCKER_IMAGE = 'nourcheneba/kenzo:nourchenebenabdallah-4twin2-g2-kaddem'
-            DOCKER_COMPOSE = '/usr/local/bin/docker-compose'
 
     }
 
@@ -47,8 +46,9 @@ pipeline {
 
        stage('Deploy Prometheus') {
             steps {
-                dir('.') {
-                    sh "${DOCKER_COMPOSE} up -d prometheus"
+                dir('kaddem/kaddem') {
+                          sh 'docker compose up -d prometheus'
+
                 }
             }
         }
