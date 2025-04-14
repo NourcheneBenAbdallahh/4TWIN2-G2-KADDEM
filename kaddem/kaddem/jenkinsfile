@@ -1,0 +1,48 @@
+pipeline {
+    agent any
+
+    tools {
+        maven 'Maven-3.8.1'  // Nom défini dans Jenkins > Global Tool Configuration
+    }
+
+    environment {
+        SONARQUBE = 'SonarServer'  // Nom défini dans Jenkins > SonarQube servers
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                git 'https://gitlab.com/ton-projet.git' // ou GitHub
+            }
+        }
+
+        stage('Build & Test') {
+            steps {
+                sh 'mvn clean install'
+            }
+        }
+
+        stage('SonarQube Analysis') {
+            steps {
+                withSonarQubeEnv("${env.SONARQUBE}") {
+                    sh 'mvn sonar:sonar'
+                }
+            }
+        }
+
+        stage('Deploy to Nexus') {
+            steps {
+                sh 'mvn deploy'
+            }
+        }
+    }
+
+    post {
+        success {
+            echo '✅ Pipeline terminé avec succès.'
+        }
+        failure {
+            echo '❌ Échec du pipeline.'
+        }
+    }
+}
