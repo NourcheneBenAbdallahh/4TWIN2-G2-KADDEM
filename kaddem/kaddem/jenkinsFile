@@ -14,6 +14,7 @@ pipeline {
         NEXUS_REPO_URL = "http://127.0.0.1:8081/repository/maven-releases/"
         MAVEN_SETTINGS = "/usr/share/maven/conf/settings.xml"
         DOCKER_IMAGE_NAME = "oussabd/abdellaouioussema-g2-4twin2:latest"
+        ANGULAR_IMAGE_NAME = "oussabd/angular-kaddem-frontend:latest"
     }
 
     stages {
@@ -35,20 +36,20 @@ pipeline {
             }
         }
 
-        stage('Code Build') {
+        stage('Backend Build') {
             steps {
                 script {
                     try {
                         sh 'cd kaddem/kaddem && mvn clean install -DskipTests'
                     } catch (e) {
-                        echo "Code build failed: ${e.message}"
+                        echo "Backend build failed: ${e.message}"
                         throw e
                     }
                 }
             }
         }
 
-        stage('Testing') {
+        stage('Backend Testing') {
             steps {
                 script {
                     try {
@@ -60,7 +61,7 @@ pipeline {
             }
         }
 
-        stage('SonarQube') {
+        stage('SonarQube Analysis') {
             steps {
                 script {
                     try {
@@ -73,7 +74,7 @@ pipeline {
             }
         }
 
-        stage('Deploy to Nexus') {
+        stage('Deploy Backend to Nexus') {
             steps {
                 script {
                     try {
@@ -85,34 +86,60 @@ pipeline {
             }
         }
 
-        stage('Build JAR') {
+        stage('Build Backend Docker Image') {
             steps {
                 script {
                     try {
-                        sh 'cd kaddem/kaddem && mvn clean install -DskipTests'
+                        sh 'cd kaddem/kaddem && docker build -t abdellaouioussema-g2-4twin2:latest .'
                     } catch (e) {
-                        echo "JAR build failed: ${e.message}"
+                        echo "Backend Docker image build failed: ${e.message}"
                         throw e
                     }
                 }
             }
         }
 
-        stage('Docker Compose') {
+        stage('Build Angular App') {
+            steps {
+                script {
+                    try {
+                        sh '''
+                            cd kaddem/kaddem-frontend
+                            npm install
+                            npm run build --prod
+                        '''
+                    } catch (e) {
+                        echo "Angular build failed: ${e.message}"
+                        throw e
+                    }
+                }
+            }
+        }
+
+        stage('Build Angular Docker Image') {
+            steps {
+                script {
+                    try {
+                        sh 'cd kaddem/kaddem-frontend && docker build -t angular-kaddem-frontend:latest .'
+                    } catch (e) {
+                        echo "Angular Docker image build failed: ${e.message}"
+                        throw e
+                    }
+                }
+            }
+        }
+
+        stage('Docker Compose Up') {
             steps {
                 script {
                     try {
                         sh '''
                             cd kaddem/kaddem
 
-                            echo "Stopping and cleaning up existing containers..."
+                            echo "Stopping and removing old containers..."
                             docker compose down --remove-orphans
 
-                            echo "Removing existing Prometheus and Grafana containers if they exist..."
-                            docker rm -f my-prometheus-container || true
-                            docker rm -f grafana || true
-
-                            echo "Rebuilding and starting up containers..."
+                            echo "Rebuilding and starting containers..."
                             docker compose build
                             docker compose up -d
                             docker compose ps
@@ -125,9 +152,7 @@ pipeline {
             }
         }
 
-
-
-        stage('Push Docker Image to Docker Hub') {
+        stage('Push Docker Images') {
             steps {
                 script {
                     try {
@@ -140,15 +165,17 @@ pipeline {
                                 echo "Logging into Docker Hub..."
                                 echo "\$DOCKER_PASSWORD" | docker login -u "\$DOCKER_USERNAME" --password-stdin
 
-                                echo "Tagging image as ${DOCKER_IMAGE_NAME}..."
+                                echo "Tagging backend image..."
                                 docker tag abdellaouioussema-g2-4twin2:latest ${DOCKER_IMAGE_NAME}
-
-                                echo "Pushing image to Docker Hub..."
                                 docker push ${DOCKER_IMAGE_NAME}
+
+                                echo "Tagging Angular image..."
+                                docker tag angular-kaddem-frontend:latest ${ANGULAR_IMAGE_NAME}
+                                docker push ${ANGULAR_IMAGE_NAME}
                             """
                         }
                     } catch (e) {
-                        echo "Failed to push Docker image to Docker Hub: ${e.message}"
+                        echo "Docker image push failed: ${e.message}"
                         throw e
                     }
                 }
