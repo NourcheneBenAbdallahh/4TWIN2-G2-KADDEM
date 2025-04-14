@@ -94,25 +94,14 @@ pipeline {
             }
         }
 
-stage('SonarQube Analysis') {
-    environment {
-        SONAR_AUTH_TOKEN = credentials('sonarqube-token')
-    }
-    steps {
-        withSonarQubeEnv('SonarQube-Server') {
-            sh """
-                mvn sonar:sonar \
-                -Dsonar.host.url=http://localhost:9000 \
-                -Dsonar.login=${SONAR_AUTH_TOKEN} \
-                -Dsonar.projectKey=kaddem \
-                -Dsonar.projectName=kaddem \
-                -Dsonar.sourceEncoding=UTF-8 \
-                -Dsonar.sources=src/main/java \
-                -Dsonar.tests=src/test/java
-            """
+
+   stage('SonarQube Analysis') {
+            steps {
+                sh 'mvn sonar:sonar -Dsonar.token=sqa_3beb746071c960af505c36bb900bb23b49019ea4 -Dmaven.test.skip=true'
+
+
+            }
         }
-    }
-}
 
 stage('Deploy to Nexus') {
     steps {
