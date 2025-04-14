@@ -133,7 +133,7 @@ pipeline {
 
                                 IMAGE_NAME="${DOCKER_IMAGE_NAME}"
                                 echo "Tagging image as $IMAGE_NAME..."
-                                docker tag oussemajridi-4twin2-g6-kaddem:latest $IMAGE_NAME
+                                docker tag abdellaouioussema-g2-4twin2:latest $IMAGE_NAME
 
                                 echo "Pushing image to Docker Hub..."
                                 docker push $IMAGE_NAME
