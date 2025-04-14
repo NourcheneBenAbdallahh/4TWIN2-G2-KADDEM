@@ -2,40 +2,58 @@ pipeline {
     agent any
 
     tools {
-        maven 'M2_HOME' // Assurez-vous que 'M2_HOME' est configuré dans Jenkins
+        maven 'M2_HOME'  // Assurez-vous que ce tool est configuré dans Jenkins
+        jdk 'jdk11'      // Ajoutez cette ligne si vous utilisez Java
+    }
+
+    environment {
+        // Configuration Docker
+        DOCKER_IMAGE = 'ebtihel352/4twin2-g6-kaddem:latest'
+        DOCKER_REGISTRY = 'docker.io'
+
+        // Configuration SonarQube
+        SONAR_HOST_URL = 'http://votre-serveur-sonarqube:9000'
+
+        // Configuration Nexus
+        NEXUS_URL = 'http://localhost:8081/repository/maven-releases/'
     }
 
     options {
         timeout(time: 30, unit: 'MINUTES')
+        buildDiscarder(logRotator(numToKeepStr: '5'))
     }
 
     stages {
         stage('Checkout Code') {
             steps {
-                script {
-                    try {
-                        checkout([
-                            $class: 'GitSCM',
-                            branches: [[name: 'ebtihel']],
-                            userRemoteConfigs: [[url: 'https://github.com/Nouunouu/DevopsProject.git']]
-                        ])
-                    } catch (Exception e) {
-                        echo "Échec du checkout du code : ${e.message}"
-                        throw e
-                    }
-                }
+                checkout([
+                    $class: 'GitSCM',
+                    branches: [[name: 'ebtihel']],
+                    userRemoteConfigs: [[url: 'https://github.com/Nouunouu/DevopsProject.git']]
+                ])
             }
         }
 
         stage('Code Build') {
             steps {
-                script {
-                    try {
-                        sh 'mvn clean install -DskipTests'
-                    } catch (Exception e) {
-                        echo "Échec de la compilation : ${e.message}"
-                        throw e
-                    }
+                sh 'mvn clean install -DskipTests'
+            }
+        }
+
+        stage('SonarQube Analysis') {
+            steps {
+                withSonarQubeEnv('SonarQube-Server') {
+                    sh """
+                        mvn sonar:sonar \
+                        -Dsonar.projectKey=kaddem \
+                        -Dsonar.projectName="Kaddem Project" \
+                        -Dsonar.host.url=${SONAR_HOST_URL} \
+                        -Dsonar.login=sqa_3beb746071c960af505c36bb900bb23b49019ea4 \
+                        -Dsonar.java.binaries=target/classes
+                    """
+                }
+                timeout(time: 5, unit: 'MINUTES') {
+                    waitForQualityGate abortPipeline: true
                 }
             }
         }
@@ -43,113 +61,67 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 script {
-                    try {
-                        sh '''
-                            echo "Construction de l'image Docker..."
-                            docker build -t kaddem:latest .
-                        '''
-                    } catch (Exception e) {
-                        echo "Échec de la construction de l'image Docker : ${e.message}"
-                        throw e
-                    }
+                    docker.build("${DOCKER_IMAGE}")
                 }
             }
         }
 
-
-        stage('Push Docker Image to Docker Hub') {
+        stage('Push Docker Image') {
             steps {
                 script {
-                    try {
-                        // Définir le nom de l'image pour votre compte
-                        def DOCKER_IMAGE_NAME = 'ebtihel352/4twin2-g6-kaddem:latest'
-
-                        // Vérifier les images locales
-                        sh 'docker images'
-
-                        // Connexion à Docker Hub
-                        withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', usernameVariable: 'DOCKERHUB_USERNAME', passwordVariable: 'DOCKERHUB_PASSWORD')]) {
-                            sh '''
-                                echo "Connexion à Docker Hub..."
-                                echo "$DOCKERHUB_PASSWORD" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
-                            '''
-                        }
-
-                        // Tagger l'image
+                    withCredentials([usernamePassword(
+                        credentialsId: 'dockerhub-credentials',
+                        usernameVariable: 'DOCKER_USER',
+                        passwordVariable: 'DOCKER_PASS'
+                    )]) {
                         sh """
-                            echo "Taggage de l'image..."
-                            docker tag kaddem:latest ${DOCKER_IMAGE_NAME}
+                            echo "${DOCKER_PASS}" | docker login -u "${DOCKER_USER}" --password-stdin ${DOCKER_REGISTRY}
+                            docker push ${DOCKER_IMAGE}
                         """
-
-                        // Pousser l'image
-                        sh """
-                            echo "Pousser l'image vers Docker Hub..."
-                            docker push ${DOCKER_IMAGE_NAME}
-                        """
-                    } catch (Exception e) {
-                        echo "Échec de la poussée de l'image Docker vers Docker Hub : ${e.message}"
-                        throw e
                     }
                 }
             }
         }
 
-
-   stage('SonarQube Analysis') {
+        stage('Deploy to Nexus') {
             steps {
-                sh 'mvn sonar:sonar -Dsonar.token=sqa_3beb746071c960af505c36bb900bb23b49019ea4 -Dmaven.test.skip=true'
-
-
-            }
-        }
-
-stage('Deploy to Nexus') {
-    steps {
-        script {
-            try {
                 withCredentials([usernamePassword(
-                    credentialsId: 'nexus-credentials',  // ID des credentials Nexus dans Jenkins
+                    credentialsId: 'nexus-credentials',
                     usernameVariable: 'NEXUS_USER',
-                    passwordVariable: 'NEXUS_PASSWORD'
+                    passwordVariable: 'NEXUS_PASS'
                 )]) {
                     sh """
                         mvn deploy \
                         -DskipTests \
-                        -DaltDeploymentRepository=nexus-releases::default::http://localhost:8081/repository/maven-releases/ \
+                        -DaltDeploymentRepository=nexus-releases::default::${NEXUS_URL} \
                         -DrepositoryId=nexus-releases \
-                        -Durl=http://localhost:8081/repository/maven-releases/ \
+                        -Durl=${NEXUS_URL} \
                         -Dusername=${NEXUS_USER} \
-                        -Dpassword=${NEXUS_PASSWORD}
+                        -Dpassword=${NEXUS_PASS}
                     """
                 }
-            } catch (Exception e) {
-                error "Échec du déploiement Nexus: ${e.message}"
             }
         }
-    }
-}
+
         stage('Testing') {
             steps {
-                script {
-                    try {
-                        sh 'mvn test'
-                    } catch (Exception e) {
-                        echo "Échec des tests : ${e.message}"
-                        throw e
-                    }
-                }
+                sh 'mvn test'
             }
         }
     }
 
-
-
     post {
+        always {
+            echo "Nettoyage des ressources..."
+            // Ajoutez ici des étapes de nettoyage si nécessaire
+        }
         success {
-            echo "===== Pipeline exécuté avec succès ====="
+            echo '===== Pipeline exécuté avec succès ====='
+            // SlackNotifier ou autre notification
         }
         failure {
-            echo "===== Échec de l'exécution du pipeline ====="
+            echo '===== Échec de l exécution du pipeline ====='
+            // Notification d'échec
         }
     }
 }
