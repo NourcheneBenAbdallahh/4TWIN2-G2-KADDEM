@@ -47,7 +47,7 @@ pipeline {
        stage('Deploy Prometheus') {
             steps {
                 dir('kaddem/kaddem') {
-                          sh 'docker compose up -d prometheus2'
+                          sh 'docker compose up -d prometheus'
 
                 }
             }
