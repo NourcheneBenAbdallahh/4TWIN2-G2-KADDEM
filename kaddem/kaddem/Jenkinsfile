@@ -9,7 +9,7 @@ pipeline {
         SONARQUBE = 'SonarServer'  // Nom défini dans Jenkins > SonarQube servers
     }
 
-    stages {
+  stages {
         stage('Checkout') {
             steps {
                 git branch: 'NourcheneBenAbdallah-4TWIN2-G2', url: 'https://github.com/NourcheneBenAbdallahh/4TWIN2-G2-KADDEM.git'
@@ -18,21 +18,27 @@ pipeline {
 
         stage('Build & Test') {
             steps {
-                sh 'mvn clean install'
+                dir('kaddem/kaddem') {
+                    sh 'mvn clean install'
+                }
             }
         }
 
         stage('SonarQube Analysis') {
             steps {
-                withSonarQubeEnv("${env.SONARQUBE}") {
-                    sh 'mvn sonar:sonar'
+                dir('kaddem/kaddem') {
+                    withSonarQubeEnv("${env.SONARQUBE}") {
+                        sh 'mvn sonar:sonar'
+                    }
                 }
             }
         }
 
         stage('Deploy to Nexus') {
             steps {
-                sh 'mvn deploy'
+                dir('kaddem/kaddem') {
+                    sh 'mvn deploy'
+                }
             }
         }
     }
