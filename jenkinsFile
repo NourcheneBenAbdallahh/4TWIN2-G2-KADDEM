@@ -94,7 +94,7 @@ pipeline {
             }
         }
 
-/*
+
    stage('SonarQube Analysis') {
             steps {
                 sh 'mvn sonar:sonar -Dsonar.token=sqa_9c74d47928939c31d3c07db41b8c124632bcd08e -Dmaven.test.skip=true'
@@ -102,7 +102,7 @@ pipeline {
 
             }
         }
-*/
+
 
         stage('Testing') {
             steps {
