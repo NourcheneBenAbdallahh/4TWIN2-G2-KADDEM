@@ -95,12 +95,8 @@ pipeline {
         }
 
 stage('SonarQube Analysis') {
-    environment {
-        // Utilisation d'une credential Jenkins sécurisée
-        SONAR_TOKEN = credentials('sonarqube-token')
-    }
     steps {
-        withSonarQubeEnv('SonarQube-Server') {
+        withCredentials([string(credentialsId: 'sonarqube-token', variable: 'SONAR_TOKEN')]) {
             sh '''
                 mvn sonar:sonar \
                 -Dsonar.projectKey=kaddem \
