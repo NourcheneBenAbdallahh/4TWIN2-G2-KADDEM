@@ -88,6 +88,22 @@ pipeline {
                 }
             }
         }
+        stage('Build JAR') {
+            steps {
+                script {
+                    try {
+                        sh '''
+                            cd kaddem/kaddem
+                            mvn clean install -DskipTests
+                        '''
+                    } catch (Exception e) {
+                        echo "JAR build failed: ${e.message}"
+                        throw e
+                    }
+                }
+            }
+        }
+
         stage('Docker Compose') {
             steps {
                 script {
