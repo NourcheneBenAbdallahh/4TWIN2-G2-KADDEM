@@ -104,6 +104,7 @@ pipeline {
                     try {
                         sh '''
                             cd kaddem/kaddem
+                            docker compose down
                             docker compose build
                             docker compose up -d
                             docker compose ps
@@ -115,6 +116,7 @@ pipeline {
                 }
             }
         }
+
 
         stage('Push Docker Image to Docker Hub') {
             steps {
