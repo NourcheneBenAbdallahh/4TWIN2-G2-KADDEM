@@ -62,8 +62,8 @@ pipeline {
         dir('kaddem/kaddem') {
             script {
                 docker.withRegistry('https://index.docker.io/v1/', 'docker-hub-credentials-id') {
-                    sh "docker tag ${DOCKER_IMAGE} nourcheneba/projetdevops:nourchenebenabdallah-4twin2-g2-kaddem"
-                    sh "docker --debug push nourcheneba/projetdevops:nourchenebenabdallah-4twin2-g2-kaddem"
+                    sh "docker tag ${DOCKER_IMAGE} nourcheneba/kenzo:nourchenebenabdallah-4twin2-g2-kaddem"
+                    sh "docker --debug push nourcheneba/kenzo:nourchenebenabdallah-4twin2-g2-kaddem"
                 }
             }
         }
