@@ -104,7 +104,14 @@ pipeline {
                     try {
                         sh '''
                             cd kaddem/kaddem
-                            docker compose down
+
+                            echo "Stopping and cleaning up existing containers..."
+                            docker compose down --remove-orphans
+
+                            echo "Removing existing Prometheus container if exists..."
+                            docker rm -f prometheus || true
+
+                            echo "Rebuilding and starting up containers..."
                             docker compose build
                             docker compose up -d
                             docker compose ps
@@ -116,6 +123,7 @@ pipeline {
                 }
             }
         }
+
 
 
         stage('Push Docker Image to Docker Hub') {
