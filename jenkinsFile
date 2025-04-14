@@ -56,14 +56,20 @@ pipeline {
             }
         }
 
-
-           stage('SonarQube Analysis') {
-                    steps {
-                        sh 'mvn sonar:sonar -Dsonar.token=b0462e69ce7ebc19c5f62efc9dd37cfa4af3ba83 -Dmaven.test.skip=true'
-
-
-                    }
-                }
+stage('SonarQube Analysis') {
+    steps {
+        withSonarQubeEnv('SonarQube-Server') {  // Nom de votre configuration SonarQube dans Jenkins
+            sh '''
+                mvn sonar:sonar \
+                -Dsonar.projectKey=kaddem \
+                -Dsonar.host.url=http://localhost:9000 \
+                -Dsonar.login=b0462e69ce7ebc19c5f62efc9dd37cfa4af3ba83 \
+                -Dsonar.projectVersion=1.0 \
+                -Dsonar.sources=src/
+            '''
+        }
+    }
+}
 
         stage('Push Docker Image to Docker Hub') {
             steps {
