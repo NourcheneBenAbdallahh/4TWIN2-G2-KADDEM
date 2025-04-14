@@ -7,6 +7,7 @@ pipeline {
 
     environment {
         SONARQUBE = 'SonarServer'  // Nom défini dans Jenkins > SonarQube servers
+        DOCKER_IMAGE = 'nourchenebenabdallah-4twin2-g2-kaddem:latest'
     }
 
   stages {
