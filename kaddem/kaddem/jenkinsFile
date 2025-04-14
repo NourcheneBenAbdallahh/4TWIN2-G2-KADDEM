@@ -11,7 +11,6 @@ pipeline {
         NEXUS_REPO_URL = "http://127.0.0.1:8081/repository/maven-releases/"
         MAVEN_SETTINGS = "/usr/share/maven/conf/settings.xml"
         DOCKER_IMAGE_NAME = "oussabd/abdellaouioussema-g2-4twin2:latest" // Update with your Docker Hub username and repository name
-
     }
     stages {
         stage('Checkout Code') {
@@ -59,7 +58,7 @@ pipeline {
                 }
             }
         }
-         stage('SonarQube') {
+        stage('SonarQube') {
             steps {
                 script {
                     try {
@@ -110,9 +109,9 @@ pipeline {
                     try {
                         sh '''
                             cd kaddem/kaddem
-                            docker compose build
-                            docker compose up -d
-                            docker compose ps
+                            docker-compose build
+                            docker-compose up -d
+                            docker-compose ps
                         '''
                     } catch (Exception e) {
                         echo "Docker Compose failed: ${e.message}"
@@ -146,8 +145,7 @@ pipeline {
                 }
             }
         }
-
-
+    }
     post {
         success {
             echo "===== Pipeline executed successfully ====="
