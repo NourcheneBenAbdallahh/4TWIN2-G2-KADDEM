@@ -14,20 +14,20 @@ pipeline {
     }
 
     stages {
-        // stage('Git Checkout') {
-        //     steps {
-        //         git branch: 'HadilBouhachem-4TWIN2-G2', url: 'https://github.com/NourcheneBenAbdallahh/4TWIN2-G2-KADDEM'
-        //     }
-        // }
+        stage('Git Checkout') {
+            steps {
+                git branch: 'HadilBouhachem-4TWIN2-G2', url: 'https://github.com/NourcheneBenAbdallahh/4TWIN2-G2-KADDEM'
+            }
+        }
 
-        // stage('Compile Stage') {
-        //     steps {
-        //         sh '''
-        //         cd kaddem/kaddem
-        //         mvn clean install -DskipTests
-        //         '''
-        //     }
-        // }
+        stage('Compile Stage') {
+            steps {
+                sh '''
+                cd kaddem/kaddem
+                mvn clean install -DskipTests
+                '''
+            }
+        }
         // stage('Testing') {
         //     steps {
         //         script {
