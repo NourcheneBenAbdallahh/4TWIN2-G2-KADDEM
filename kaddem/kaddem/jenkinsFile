@@ -14,6 +14,7 @@ pipeline {
         NEXUS_REPO_URL = "http://127.0.0.1:8081/repository/maven-releases/"
         MAVEN_SETTINGS = "/usr/share/maven/conf/settings.xml"
         DOCKER_IMAGE_NAME = "oussabd/abdellaouioussema-g2-4twin2:latest"
+        KUBECONFIG_CREDENTIALS_ID = 'kubeconfig-credentials' // Add your kubeconfig credentials ID
     }
 
     stages {
@@ -125,8 +126,6 @@ pipeline {
             }
         }
 
-
-
         stage('Push Docker Image to Docker Hub') {
             steps {
                 script {
@@ -149,6 +148,45 @@ pipeline {
                         }
                     } catch (e) {
                         echo "Failed to push Docker image to Docker Hub: ${e.message}"
+                        throw e
+                    }
+                }
+            }
+        }
+
+        stage('Deploy to Kubernetes') {
+            steps {
+                script {
+                    try {
+                        withCredentials([file(credentialsId: "${KUBECONFIG_CREDENTIALS_ID}", variable: 'KUBECONFIG')]) {
+                            sh '''
+                                # Ensure kubectl uses the provided kubeconfig
+                                export KUBECONFIG=$KUBECONFIG
+
+                                # Verify kubectl can access the cluster
+                                kubectl cluster-info
+
+                                # Apply MySQL manifests first (since kaddem-app depends on it)
+                                kubectl apply -f kaddem/kaddem/k8s/mysql-deployment.yaml
+                                kubectl apply -f kaddem/kaddem/k8s/mysql-service.yaml
+
+                                # Wait for MySQL to be ready
+                                kubectl wait --for=condition=available deployment/mysql --timeout=300s
+
+                                # Apply kaddem-app manifests
+                                kubectl apply -f kaddem/kaddem/k8s/kaddem-deployment.yaml
+                                kubectl apply -f kaddem/kaddem/k8s/kaddem-service.yaml
+
+                                # Wait for kaddem-app to be ready
+                                kubectl wait --for=condition=available deployment/kaddem-app --timeout=300s
+
+                                # Verify the deployment
+                                kubectl get pods -n default
+                                kubectl get services -n default
+                            '''
+                        }
+                    } catch (e) {
+                        echo "Kubernetes deployment failed: ${e.message}"
                         throw e
                     }
                 }
