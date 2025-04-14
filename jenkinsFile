@@ -108,7 +108,7 @@ stage('Deploy to Nexus') {
         script {
             try {
                 withCredentials([usernamePassword(
-                    credentialsId: 'nexus-credentials',  // ID des credentials Nexus dans Jenkins
+                    credentialsId: 'deploymentRepo',  // ID des credentials Nexus dans Jenkins
                     usernameVariable: 'NEXUS_USER',
                     passwordVariable: 'NEXUS_PASSWORD'
                 )]) {
