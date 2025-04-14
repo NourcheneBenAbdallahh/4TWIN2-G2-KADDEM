@@ -121,30 +121,36 @@ pipeline {
             }
         }
 
-        stage('Push Docker Image to Docker Hub') {
-            steps {
-                script {
-                    try {
-                        withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
-                            sh '''
-                                echo "Logging into Docker Hub..."
-                                echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+stage('Push Docker Image to Docker Hub') {
+    steps {
+        script {
+            try {
+                // Ensuring the credentials are being correctly used
+                withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
+                    // Debugging: Ensure credentials are passed correctly (without exposing password)
+                    echo "Logging into Docker Hub with user: $DOCKER_USERNAME"
 
-                                IMAGE_NAME="${DOCKER_IMAGE_NAME}"
-                                echo "Tagging image as $IMAGE_NAME..."
-                                docker tag abdellaouioussema-g2-4twin2:latest $IMAGE_NAME
+                    // Docker login with username and password
+                    sh '''
+                        echo "Logging into Docker Hub..."
+                        echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
 
-                                echo "Pushing image to Docker Hub..."
-                                docker push $IMAGE_NAME
-                            '''
-                        }
-                    } catch (Exception e) {
-                        echo "Failed to push Docker image to Docker Hub: ${e.message}"
-                        throw e
-                    }
+                        IMAGE_NAME="${DOCKER_IMAGE_NAME}"
+                        echo "Tagging image as $IMAGE_NAME..."
+                        docker tag abdellaouioussema-g2-4twin2:latest $IMAGE_NAME
+
+                        echo "Pushing image to Docker Hub..."
+                        docker push $IMAGE_NAME
+                    '''
                 }
+            } catch (Exception e) {
+                echo "Failed to push Docker image to Docker Hub: ${e.message}"
+                throw e
             }
         }
+    }
+}
+
     }
     post {
         success {
