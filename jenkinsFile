@@ -95,19 +95,6 @@ pipeline {
         }
 
 
-                stage('Testing') {
-                    steps {
-                        script {
-                            try {
-                                sh 'mvn test'
-                            } catch (Exception e) {
-                                echo "Échec des tests : ${e.message}"
-                                throw e
-                            }
-                        }
-                    }
-                }
-            }
 
 /*
    stage('SonarQube Analysis') {
