@@ -107,23 +107,14 @@ stage('Deploy to Nexus') {
     steps {
         script {
             try {
-                withCredentials([usernamePassword(
-                    credentialsId: 'deploymentRepo',  // ID des credentials Nexus dans Jenkins
-                    usernameVariable: 'NEXUS_USER',
-                    passwordVariable: 'NEXUS_PASSWORD'
-                )]) {
-                    sh """
-                        mvn deploy \
-                        -DskipTests \
-                        -DaltDeploymentRepository=nexus-releases::default::http://localhost:8081/repository/maven-releases/ \
-                        -DrepositoryId=nexus-releases \
-                        -Durl=http://localhost:8081/repository/maven-releases/ \
-                        -Dusername=${NEXUS_USER} \
-                        -Dpassword=${NEXUS_PASSWORD}
-                    """
-                }
+                // Ensure MAVEN_SETTINGS is defined; fall back to default if not set
+                def mavenSettings = env.MAVEN_SETTINGS ?: '/usr/share/maven/conf/settings.xml'
+                sh """
+                    mvn deploy --settings ${mavenSettings} -DskipTests
+                """
             } catch (Exception e) {
-                error "Échec du déploiement Nexus: ${e.message}"
+                echo "Deployment to Nexus failed: ${e.message}"
+                error "Failed to deploy to Nexus. Check Nexus credentials and repository configuration."
             }
         }
     }
