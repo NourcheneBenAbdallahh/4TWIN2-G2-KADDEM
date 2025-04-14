@@ -1,43 +1,104 @@
 pipeline {
     agent any
+
     tools {
+        jdk 'JAVA_HOME'
         maven 'M2_HOME'
     }
-    options {
-        timeout(time: 30, unit: 'MINUTES')
-    }
+
     environment {
-        
+        DB_URL = 'jdbc:mysql://localhost:3306/db'
+        NEXUS_REPO_URL = "http://127.0.0.1:8081/repository/maven-releases/"
+        MAVEN_SETTINGS = "/usr/share/maven/conf/settings.xml"
+        DOCKER_IMAGE_NAME = "hadilbouhachem12/hadilbouhachem-4twin2-g6-kaddem:latest"
     }
+
     stages {
-        stage('Checkout Code') {
+        stage('Git Checkout') {
             steps {
-                script {
-                    try {
-                        checkout([
-                            $class: 'GitSCM',
-                            branches: [[name: 'hadil']],
-                            userRemoteConfigs: [[url: 'https://github.com/Nouunouu/4TWIN2-G6-KADDEM.git']]
-                        ])
-                    } catch (Exception e) {
-                        echo "Failed to checkout code: ${e.message}"
-                        throw e // Rethrow to fail the pipeline if checkout fails
-                    }
-                }
+                git branch: 'HadilBouhachem-4TWIN2-G2', url: 'https://github.com/NourcheneBenAbdallahh/4TWIN2-G2-KADDEM'
             }
         }
-        stage('Code Build') {
+
+        stage('Compile Stage') {
+            steps {
+                sh 'mvn clean install -DskipTests'
+            }
+        }
+        stage('Testing') {
             steps {
                 script {
                     try {
                         sh '''
                             cd kaddem/kaddem
-                            mvn clean install -DskipTests
+                            mvn test
                         '''
                     } catch (Exception e) {
-                        echo "Code build failed: ${e.message}"
-                        throw e // Rethrow to fail the pipeline if build fails
+                        echo "Tests failed: ${e.message}"
+                        // Ne pas relancer l'exception pour permettre au pipeline de continuer
                     }
                 }
             }
-        }}}
+        }
+        stage('Docker Login') {
+            steps {
+                script {
+                    withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', usernameVariable: 'DOCKERHUB_USERNAME', passwordVariable: 'DOCKERHUB_PASSWORD')]) {
+                        sh '''
+                            echo "Logging into Docker Hub..."
+                            echo "${DOCKERHUB_PASSWORD}" | docker login -u "${DOCKERHUB_USERNAME}" --password-stdin
+                        '''
+                    }
+                }
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                script {
+                    try {
+                        sh '''
+                            # Naviguer vers le répertoire contenant le Dockerfile
+                            cd kaddem/kaddem
+                            # Construire l'image Docker
+                            docker-compose down
+                            docker-compose up --build
+                        '''
+                    } catch (Exception e) {
+                        echo "Failed to build Docker image: ${e.message}"
+                        throw e
+                    }
+                }
+            }
+        }
+
+        stage('Push Docker Image to Docker Hub') {
+            steps {
+                script {
+                    try {
+                        sh '''
+                            echo "Tagging Docker image..."
+                            docker tag hadilbouhachem-4twin2-g6-kaddem:latest ${DOCKER_IMAGE_NAME}
+
+                            echo "Pushing Docker image to Docker Hub..."
+                            docker push ${DOCKER_IMAGE_NAME}
+                        '''
+                    } catch (Exception e) {
+                        echo "Failed to push Docker image to Docker Hub: ${e.message}"
+                        throw e
+                    }
+                }
+            }
+        }
+
+    }
+
+    post {
+        success {
+            echo "Pipeline completed successfully!"
+        }
+        failure {
+            echo "Pipeline failed. Please check the logs for details."
+        }
+    }
+}

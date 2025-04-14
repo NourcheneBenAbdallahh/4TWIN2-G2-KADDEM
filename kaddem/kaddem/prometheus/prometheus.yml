@@ -1,0 +1,17 @@
+global:
+  scrape_interval: 1s # Default interval for scraping metrics
+  evaluation_interval: 1s # Interval for evaluating alerting rules
+scrape_configs:
+  # Scrape Prometheus itself
+  - job_name: "prometheus"
+    static_configs:
+      - targets: ["localhost:9090"]
+  # Scrape Jenkins metrics
+  - job_name: "jenkins"
+    metrics_path: "/prometheus" # Path where Jenkins exposes metrics
+    static_configs:
+      - targets: ["192.168.33.10:8080"] # Replace with your Jenkins server address
+  - job_name: "hadilbouhachem-4twin2-g6-kaddem"
+    metrics_path: "/kaddem/actuator/prometheus"
+    static_configs:
+      - targets: ["192.168.33.10:8089"]
