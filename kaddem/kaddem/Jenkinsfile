@@ -52,7 +52,7 @@ pipeline {
         stage('Run Docker Compose') {
             steps {
                 dir('kaddem/kaddem') {
-                    sh 'docker-compose up -d --build'
+      sh 'docker compose up -d --build'
                 }
             }
         }
