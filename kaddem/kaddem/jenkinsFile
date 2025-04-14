@@ -123,13 +123,13 @@ pipeline {
         }
 
         stage('Push Docker Image to Docker Hub') {
-        steps {
-            script {
-                try {
-                        withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', usernameVariable: 'oussabd', passwordVariable: 'GWLT-GZVT')]) {
+            steps {
+                script {
+                    try {
+                        withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
                             sh '''
                                 echo "Logging into Docker Hub..."
-                                echo "$GWLT-GZVT" | docker login -u "$oussabd" --password-stdin
+                                echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
 
                                 IMAGE_NAME="${DOCKER_IMAGE_NAME}"
                                 echo "Tagging image as $IMAGE_NAME..."
@@ -140,16 +140,13 @@ pipeline {
                             '''
                         }
                     } catch (Exception e) {
-                    echo "Failed to push Docker image to Docker Hub: ${e.message}"
-                    throw e
+                        echo "Failed to push Docker image to Docker Hub: ${e.message}"
+                        throw e
                     }
                 }
             }
         }
 
-
-
-    }
 
     post {
         success {
