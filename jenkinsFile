@@ -95,17 +95,21 @@ pipeline {
         }
 
 stage('SonarQube Analysis') {
+    environment {
+        SONAR_AUTH_TOKEN = credentials('sonarqube-token')
+    }
     steps {
-        withCredentials([string(credentialsId: 'sonarqube-token', variable: 'SONAR_TOKEN')]) {
-            sh '''
+        withSonarQubeEnv('SonarQube-Server') {
+            sh """
                 mvn sonar:sonar \
-                -Dsonar.projectKey=kaddem \
                 -Dsonar.host.url=http://localhost:9000 \
-                -Dsonar.login=${SONAR_TOKEN} \
+                -Dsonar.login=${SONAR_AUTH_TOKEN} \
+                -Dsonar.projectKey=kaddem \
+                -Dsonar.projectName=kaddem \
+                -Dsonar.sourceEncoding=UTF-8 \
                 -Dsonar.sources=src/main/java \
-                -Dsonar.tests=src/test/java \
-                -Dsonar.test.inclusions=src/test/java/**/*
-            '''
+                -Dsonar.tests=src/test/java
+            """
         }
     }
 }
