@@ -109,9 +109,9 @@ pipeline {
                     try {
                         sh '''
                             cd kaddem/kaddem
-                            docker-compose build
-                            docker-compose up -d
-                            docker-compose ps
+                            docker compose build
+                            docker compose up -d
+                            docker compose ps
                         '''
                     } catch (Exception e) {
                         echo "Docker Compose failed: ${e.message}"
