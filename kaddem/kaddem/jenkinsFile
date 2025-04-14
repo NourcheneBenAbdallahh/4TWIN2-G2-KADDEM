@@ -129,7 +129,7 @@ pipeline {
                         withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', usernameVariable: 'oussabd', passwordVariable: 'GWLT-GZVT')]) {
                             sh '''
                                 echo "Logging into Docker Hub..."
-                                echo "$DOCKERHUB_PASSWORD" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
+                                echo "$GWLT-GZVT" | docker login -u "$oussabd" --password-stdin
 
                                 IMAGE_NAME="${DOCKER_IMAGE_NAME}"
                                 echo "Tagging image as $IMAGE_NAME..."
