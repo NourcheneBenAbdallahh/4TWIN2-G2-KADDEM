@@ -43,6 +43,35 @@ pipeline {
                 }
             }
         }
+        stage('SonarQube') {
+            steps {
+                script {
+                    try {
+                        sh '''
+                            cd kaddem/kaddem
+                            mvn sonar:sonar -Dsonar.token=squ_37563b1dcb4306f08618aaf1720603dc827bcb67 -DskipTests
+                        '''
+                    } catch (Exception e) {
+                        echo "SonarQube analysis failed: ${e.message}"
+                        throw e // Rethrow to fail the pipeline if SonarQube fails
+                    }
+                }
+            }
+        }
+        stage('Deploy to Nexus') {
+            steps {
+                script {
+                    try {
+                        sh '''
+                            cd kaddem/kaddem
+                            mvn deploy --settings ${MAVEN_SETTINGS} -DskipTests
+                        '''
+                    } catch (Exception e) {
+                        echo "Deployment to Nexus failed: ${e.message}"
+                    }
+                }
+            }
+        }
         stage('Docker Login') {
             steps {
                 script {
