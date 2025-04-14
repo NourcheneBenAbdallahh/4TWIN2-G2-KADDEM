@@ -1,5 +1,3 @@
-version: "3.8"
-
 services:
   abdellaouioussema-4twin2-g6-kaddem:
     container_name: kaddem-app

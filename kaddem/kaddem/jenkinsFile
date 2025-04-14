@@ -108,8 +108,9 @@ pipeline {
                             echo "Stopping and cleaning up existing containers..."
                             docker compose down --remove-orphans
 
-                            echo "Removing existing Prometheus container if exists..."
-                            docker rm -f prometheus || true
+                            echo "Removing existing Prometheus and Grafana containers if they exist..."
+                            docker rm -f my-prometheus-container || true
+                            docker rm -f grafana || true
 
                             echo "Rebuilding and starting up containers..."
                             docker compose build
