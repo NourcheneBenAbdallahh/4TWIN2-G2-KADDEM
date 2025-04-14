@@ -22,7 +22,10 @@ pipeline {
 
         stage('Compile Stage') {
             steps {
-                sh 'mvn clean install -DskipTests'
+                sh '''
+                cd kaddem/kaddem
+                mvn clean install -DskipTests
+                '''
             }
         }
         stage('Testing') {
