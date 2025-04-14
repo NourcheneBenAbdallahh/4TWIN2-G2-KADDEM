@@ -52,8 +52,7 @@ pipeline {
         stage('Run Docker Compose') {
             steps {
                 dir('kaddem/kaddem') {
-                    sh "docker builder prune -f || true"
-sh "docker system prune -af || true"
+                    
       sh 'docker compose up -d --build'
                 }
             }
