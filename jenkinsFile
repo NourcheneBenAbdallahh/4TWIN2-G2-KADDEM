@@ -97,7 +97,7 @@ pipeline {
 
    stage('SonarQube Analysis') {
             steps {
-                sh 'mvn sonar:sonar -Dsonar.token=sqa_9c74d47928939c31d3c07db41b8c124632bcd08e -Dmaven.test.skip=true'
+                sh 'mvn sonar:sonar -Dsonar.token=sqa_d64bbe8d3d626787238e4055aa2939783001c4e8 -Dmaven.test.skip=true'
 
 
             }
