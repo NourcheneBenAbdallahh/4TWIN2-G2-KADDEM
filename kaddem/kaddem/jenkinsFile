@@ -122,6 +122,32 @@ pipeline {
             }
         }
 
+        stage('Push Docker Image to Docker Hub') {
+        steps {
+            script {
+                try {
+                        withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', usernameVariable: 'DOCKERHUB_USERNAME', passwordVariable: 'DOCKERHUB_PASSWORD')]) {
+                            sh '''
+                                echo "Logging into Docker Hub..."
+                                echo "$DOCKERHUB_PASSWORD" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
+
+                                IMAGE_NAME="${DOCKER_IMAGE_NAME}"
+                                echo "Tagging image as $IMAGE_NAME..."
+                                docker tag oussemajridi-4twin2-g6-kaddem:latest $IMAGE_NAME
+
+                                echo "Pushing image to Docker Hub..."
+                                docker push $IMAGE_NAME
+                            '''
+                        }
+                    } catch (Exception e) {
+                    echo "Failed to push Docker image to Docker Hub: ${e.message}"
+                    throw e
+                    }
+                }
+            }
+        }
+
+
 
     }
 
