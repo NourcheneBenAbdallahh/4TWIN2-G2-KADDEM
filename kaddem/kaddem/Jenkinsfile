@@ -7,7 +7,7 @@ pipeline {
 
     environment {
         SONARQUBE = 'SonarServer'  // Nom défini dans Jenkins > SonarQube servers
-        DOCKER_IMAGE = 'nourchenebenabdallah-4twin2-g2-kaddem:latest'
+    DOCKER_IMAGE = 'nourcheneba/kenzo:nourchenebenabdallah-4twin2-g2-kaddem'
     }
 
   stages {
@@ -63,7 +63,7 @@ pipeline {
             script {
                 docker.withRegistry('https://index.docker.io/v1/', 'docker-hub-credentials-id') {
                     sh "docker tag ${DOCKER_IMAGE} nourcheneba/kenzo:nourchenebenabdallah-4twin2-g2-kaddem"
-                    sh "docker --debug push nourcheneba/kenzo:nourchenebenabdallah-4twin2-g2-kaddem"
+                    sh "docker --debug push ${DOCKER_IMAGE}"
                 }
             }
         }
