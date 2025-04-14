@@ -10,7 +10,7 @@ pipeline {
         EXAMPLE_VAR = 'dev'
         NEXUS_REPO_URL = "http://127.0.0.1:8081/repository/maven-releases/"
         MAVEN_SETTINGS = "/usr/share/maven/conf/settings.xml"
-        DOCKER_IMAGE_NAME = "oussabd/abdellaouioussema-g2-4twin2:latest" // Update with your Docker Hub username and repository name
+        // DOCKER_IMAGE_NAME = "oussabd/abdellaouioussema-g2-4twin2:latest" // Update with your Docker Hub username and repository name
 
     }
     stages {
