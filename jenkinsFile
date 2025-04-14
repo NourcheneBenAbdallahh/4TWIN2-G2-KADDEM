@@ -16,8 +16,8 @@ pipeline {
                     try {
                         checkout([
                             $class: 'GitSCM',
-                            branches: [[name: 'ebtihel']],
-                            userRemoteConfigs: [[url: 'https://github.com/Nouunouu/DevopsProject.git']]
+                            branches: [[name: '*/ebtihel']],
+                            userRemoteConfigs: [[url: 'https://github.com/Nouunouu/DevopsProject.git/4TWIN2-G2-KADDEM.git']]
                         ])
                     } catch (Exception e) {
                         echo "Échec du checkout du code : ${e.message}"
