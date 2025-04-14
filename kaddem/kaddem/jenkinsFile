@@ -10,6 +10,8 @@ pipeline {
         EXAMPLE_VAR = 'dev'
         NEXUS_REPO_URL = "http://127.0.0.1:8081/repository/maven-releases/"
         MAVEN_SETTINGS = "/usr/share/maven/conf/settings.xml"
+        DOCKER_IMAGE_NAME = "oussabd/abdellaouioussema-g2-4twin2:latest" // Update with your Docker Hub username and repository name
+
     }
     stages {
         stage('Checkout Code') {
@@ -67,7 +69,7 @@ pipeline {
                         '''
                     } catch (Exception e) {
                         echo "SonarQube analysis failed: ${e.message}"
-                        throw e // Rethrow to fail the pipeline if SonarQube fails
+                        throw e 
                     }
                 }
             }
@@ -82,6 +84,24 @@ pipeline {
                         '''
                     } catch (Exception e) {
                         echo "Deployment to Nexus failed: ${e.message}"
+                    }
+                }
+            }
+        }
+                stage('Docker Compose') {
+            steps {
+                script {
+                    try {
+                        sh '''
+                            cd kaddem/kaddem
+                            sudo docker-compose down
+                            sudo docker-compose build
+                            sudo docker-compose up -d
+                            sudo docker-compose ps
+                        '''
+                    } catch (Exception e) {
+                        echo "Docker Compose failed: ${e.message}"
+                        throw e 
                     }
                 }
             }
