@@ -1,18 +1,23 @@
 pipeline {
     agent any
+
     tools {
         maven 'M2_HOME'
     }
+
     options {
         timeout(time: 30, unit: 'MINUTES')
     }
+
     environment {
         EXAMPLE_VAR = 'dev'
         NEXUS_REPO_URL = "http://127.0.0.1:8081/repository/maven-releases/"
         MAVEN_SETTINGS = "/usr/share/maven/conf/settings.xml"
-        DOCKER_IMAGE_NAME = "oussabd/abdellaouioussema-g2-4twin2:latest" // Update with your Docker Hub username and repository name
+        DOCKER_IMAGE_NAME = "oussabd/abdellaouioussema-g2-4twin2:latest"
     }
+
     stages {
+
         stage('Checkout Code') {
             steps {
                 script {
@@ -22,80 +27,70 @@ pipeline {
                             branches: [[name: 'AbdellaouiOussema-4TWIN2-G2']],
                             userRemoteConfigs: [[url: 'https://github.com/Nouunouu/4TWIN2-G6-KADDEM.git']]
                         ])
-                    } catch (Exception e) {
+                    } catch (e) {
                         echo "Failed to checkout code: ${e.message}"
                         throw e
                     }
                 }
             }
         }
+
         stage('Code Build') {
             steps {
                 script {
                     try {
-                        sh '''
-                            cd kaddem/kaddem
-                            mvn clean install -DskipTests
-                        '''
-                    } catch (Exception e) {
+                        sh 'cd kaddem/kaddem && mvn clean install -DskipTests'
+                    } catch (e) {
                         echo "Code build failed: ${e.message}"
                         throw e
                     }
                 }
             }
         }
+
         stage('Testing') {
             steps {
                 script {
                     try {
-                        sh '''
-                            cd kaddem/kaddem
-                            mvn test
-                        '''
-                    } catch (Exception e) {
+                        sh 'cd kaddem/kaddem && mvn test'
+                    } catch (e) {
                         echo "Tests failed: ${e.message}"
                     }
                 }
             }
         }
+
         stage('SonarQube') {
             steps {
                 script {
                     try {
-                        sh '''
-                            cd kaddem/kaddem
-                            mvn sonar:sonar -Dsonar.token=squ_a6ab247cf9bcba1c053271d3239cf41966f27b63 -DskipTests
-                        '''
-                    } catch (Exception e) {
+                        sh 'cd kaddem/kaddem && mvn sonar:sonar -Dsonar.token=squ_a6ab247cf9bcba1c053271d3239cf41966f27b63 -DskipTests'
+                    } catch (e) {
                         echo "SonarQube analysis failed: ${e.message}"
-                        throw e 
+                        throw e
                     }
                 }
             }
         }
+
         stage('Deploy to Nexus') {
             steps {
                 script {
                     try {
-                        sh '''
-                            cd kaddem/kaddem
-                            mvn deploy --settings ${MAVEN_SETTINGS} -DskipTests
-                        '''
-                    } catch (Exception e) {
+                        sh "cd kaddem/kaddem && mvn deploy --settings ${MAVEN_SETTINGS} -DskipTests"
+                    } catch (e) {
                         echo "Deployment to Nexus failed: ${e.message}"
                     }
                 }
             }
         }
+
         stage('Build JAR') {
             steps {
                 script {
                     try {
-                        sh '''
-                            cd kaddem/kaddem
-                            mvn clean install -DskipTests
-                        '''
-                    } catch (Exception e) {
+                        sh 'cd kaddem/kaddem && mvn clean install -DskipTests'
+                    } catch (e) {
                         echo "JAR build failed: ${e.message}"
                         throw e
                     }
@@ -113,7 +108,7 @@ pipeline {
                             docker compose up -d
                             docker compose ps
                         '''
-                    } catch (Exception e) {
+                    } catch (e) {
                         echo "Docker Compose failed: ${e.message}"
                         throw e
                     }
@@ -121,37 +116,35 @@ pipeline {
             }
         }
 
-stage('Push Docker Image to Docker Hub') {
-    steps {
-        script {
-            try {
-                // Ensuring the credentials are being correctly used
-                withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
-                    // Debugging: Ensure credentials are passed correctly (without exposing password)
-                    echo "Logging into Docker Hub with user: $DOCKER_USERNAME"
+        stage('Push Docker Image to Docker Hub') {
+            steps {
+                script {
+                    try {
+                        withCredentials([usernamePassword(
+                            credentialsId: 'dockerhub-credentials',
+                            usernameVariable: 'DOCKER_USERNAME',
+                            passwordVariable: 'DOCKER_PASSWORD'
+                        )]) {
+                            sh """
+                                echo "Logging into Docker Hub..."
+                                echo "\$DOCKER_PASSWORD" | docker login -u "\$DOCKER_USERNAME" --password-stdin
 
-                    // Docker login with username and password
-                    sh '''
-                        echo "Logging into Docker Hub..."
-                        echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+                                echo "Tagging image as ${DOCKER_IMAGE_NAME}..."
+                                docker tag abdellaouioussema-g2-4twin2:latest ${DOCKER_IMAGE_NAME}
 
-                        IMAGE_NAME="${DOCKER_IMAGE_NAME}"
-                        echo "Tagging image as $IMAGE_NAME..."
-                        docker tag abdellaouioussema-g2-4twin2:latest $IMAGE_NAME
-
-                        echo "Pushing image to Docker Hub..."
-                        docker push $IMAGE_NAME
-                    '''
+                                echo "Pushing image to Docker Hub..."
+                                docker push ${DOCKER_IMAGE_NAME}
+                            """
+                        }
+                    } catch (e) {
+                        echo "Failed to push Docker image to Docker Hub: ${e.message}"
+                        throw e
+                    }
                 }
-            } catch (Exception e) {
-                echo "Failed to push Docker image to Docker Hub: ${e.message}"
-                throw e
             }
         }
     }
-}
 
-    }
     post {
         success {
             echo "===== Pipeline executed successfully ====="
