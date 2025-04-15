@@ -1,11 +1,9 @@
-
 pipeline {
-        agent {
-             node {
+    agent {
+        node {
             label 'slave_build'
-           }
         }
-    //agent any
+    }
 
     tools {
         maven 'M2_HOME'
@@ -24,7 +22,6 @@ pipeline {
 
     stages {
 
-
         stage('Checkout Code') {
             steps {
                 script {
@@ -42,27 +39,14 @@ pipeline {
             }
         }
 
-        stage('Code Build') {
+        stage('Build and Test') {
             steps {
                 script {
                     try {
-                        bat 'cd kaddem\\kaddem && mvn clean install -DskipTests'
+                        bat 'cd kaddem\\kaddem && mvn clean install'
                     } catch (e) {
                         echo "Build failed: ${e.message}"
                         throw e
-                    }
-                }
-            }
-        }
-
-
-        stage('Testing') {
-            steps {
-                script {
-                    try {
-                        bat 'cd kaddem/kaddem && mvn test'
-                    } catch (e) {
-                        echo "Tests failed: ${e.message}"
                     }
                 }
             }
@@ -72,7 +56,9 @@ pipeline {
             steps {
                 script {
                     try {
-                        bat 'cd kaddem/kaddem && mvn sonar:sonar -Dsonar.token=squ_a6ab247cf9bcba1c053271d3239cf41966f27b63 -DskipTests'
+                        withCredentials([string(credentialsId: 'sonarqube-token', variable: 'SONAR_TOKEN')]) {
+                            bat 'cd kaddem\\kaddem && mvn sonar:sonar -Dsonar.token=%SONAR_TOKEN% -DskipTests'
+                        }
                     } catch (e) {
                         echo "SonarQube analysis failed: ${e.message}"
                         throw e
@@ -85,21 +71,9 @@ pipeline {
             steps {
                 script {
                     try {
-                        bat "cd kaddem/kaddem && mvn deploy --settings ${MAVEN_SETTINGS} -DskipTests"
+                        bat "cd kaddem\\kaddem && mvn deploy --settings ${MAVEN_SETTINGS} -DskipTests"
                     } catch (e) {
                         echo "Deployment to Nexus failed: ${e.message}"
-                    }
-                }
-            }
-        }
-
-        stage('Build JAR') {
-            steps {
-                script {
-                    try {
-                        bat 'cd kaddem/kaddem && mvn clean install -DskipTests'
-                    } catch (e) {
-                        echo "JAR build failed: ${e.message}"
                         throw e
                     }
                 }
@@ -111,16 +85,16 @@ pipeline {
                 script {
                     try {
                         bat '''
-                            cd kaddem/kaddem
+                            cd kaddem\\kaddem
 
-                            echo "Stopping and cleaning up existing containers..."
+                            echo Stopping and removing existing containers...
                             docker compose down --remove-orphans
 
-                            echo "Removing existing Prometheus and Grafana containers if they exist..."
-                            docker rm -f my-prometheus-container || true
-                            docker rm -f grafana || true
+                            echo Removing existing Prometheus and Grafana containers...
+                            docker rm -f my-prometheus-container || echo "Not found"
+                            docker rm -f grafana || echo "Not found"
 
-                            echo "Rebuilding and starting up containers..."
+                            echo Rebuilding and starting containers...
                             docker compose build
                             docker compose up -d
                             docker compose ps
@@ -133,8 +107,6 @@ pipeline {
             }
         }
 
-
-
         stage('Push Docker Image to Docker Hub') {
             steps {
                 script {
@@ -145,14 +117,14 @@ pipeline {
                             passwordVariable: 'DOCKER_PASSWORD'
                         )]) {
                             bat """
-                                echo "Logging into Docker Hub..."
-                                echo "\$DOCKER_PASSWORD" | docker login -u "\$DOCKER_USERNAME" --password-stdin
+                                echo Logging into Docker Hub...
+                                echo %DOCKER_PASSWORD% | docker login -u %DOCKER_USERNAME% --password-stdin
 
-                                echo "Tagging image as ${DOCKER_IMAGE_NAME}..."
-                                docker tag abdellaouioussema-g2-4twin2:latest ${DOCKER_IMAGE_NAME}
+                                echo Tagging Docker image...
+                                docker tag abdellaouioussema-g2-4twin2:latest %DOCKER_IMAGE_NAME%
 
-                                echo "Pushing image to Docker Hub..."
-                                docker push ${DOCKER_IMAGE_NAME}
+                                echo Pushing Docker image to Docker Hub...
+                                docker push %DOCKER_IMAGE_NAME%
                             """
                         }
                     } catch (e) {
