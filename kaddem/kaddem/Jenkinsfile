@@ -58,7 +58,7 @@ pipeline {
         }
     }
 }
-      stage('Deploy Grafana') {
+      stage('Deploy grafana') {
     steps {
         script {
             echo 'Déploiement de Grafana...'
