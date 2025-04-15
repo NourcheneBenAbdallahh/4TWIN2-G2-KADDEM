@@ -36,16 +36,7 @@ services:
     networks:
       - app-network
 
-  angular-frontend:
-    container_name: angular-app
-    build:
-      context: ./kaddem/kaddem-frontend
-      dockerfile: Dockerfile
-    ports:
-      - "4200:80"
-    restart: unless-stopped
-    networks:
-      - app-network
+
 
   prometheus:
     image: prom/prometheus:latest
