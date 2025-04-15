@@ -88,16 +88,13 @@ pipeline {
                 }
             }
         }
-        stage('Docker Compose') {
+        stage('Build Spring application Docker image') {
             steps {
                 script {
                     try {
                         sh '''
                             cd kaddem/kaddem
-                            sudo docker-compose down
-                            sudo docker-compose build
-                            sudo docker-compose up -d
-                            sudo docker-compose ps
+                            sudo docker build -t oussemajridi-4twin2-g6-kaddem:latest .
                         '''
                     } catch (Exception e) {
                         echo "Docker Compose failed: ${e.message}"
@@ -131,6 +128,24 @@ pipeline {
                         '''
                     } catch (Exception e) {
                         echo "Failed to push Docker image to Docker Hub: ${e.message}"
+                    }
+                }
+            }
+        }
+        stage('Docker Compose') {
+            steps {
+                script {
+                    try {
+                        sh '''
+                            cd kaddem/kaddem
+                            sudo docker-compose down
+                            sudo docker-compose build
+                            sudo docker-compose up -d
+                            sudo docker-compose ps
+                        '''
+                    } catch (Exception e) {
+                        echo "Docker Compose failed: ${e.message}"
+                        throw e // Rethrow to fail the pipeline if Docker Compose fails
                     }
                 }
             }
