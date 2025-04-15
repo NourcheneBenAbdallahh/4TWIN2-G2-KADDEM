@@ -1,20 +1,8 @@
-version: "3.8"
+version: "3.9"
 services:
- oussemajridi-4twin2-g6-kaddem:
-  image: oussemajridi-4twin2-g6-kaddem:latest
-  build:
-   context: ./kaddem/
-   dockerfile: Dockerfile
-  ports:
-   - "8089:8089"
-  environment:
-   - SPRING_DATASOURCE_URL=jdbc:mysql://db:3306/kaddem?createDatabaseIfNotExist=true&useUnicode=true&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC
-   - SPRING_DATASOURCE_USERNAME=root
-   - SPRING_DATASOURCE_PASSWORD=root
-  depends_on:
-   - db
  db:
   image: mysql:latest
+  container_name: db
   environment:
    MYSQL_ROOT_PASSWORD: root
    MYSQL_DATABASE: kaddem
@@ -26,6 +14,39 @@ services:
    interval: 10s
    timeout: 5s
    retries: 5
+  networks:
+   - app-network
+ backend:
+  image: oussemajridi-4twin2-g6-kaddem:latest
+  build:
+   context: ./kaddem/
+   dockerfile: Dockerfile
+  container_name: backend
+  ports:
+   - "8089:8089"
+  environment:
+   SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/kaddem?createDatabaseIfNotExist=true&useUnicode=true&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC
+   SPRING_DATASOURCE_USERNAME: root
+   SPRING_DATASOURCE_PASSWORD: root
+  depends_on:
+   db:
+    condition: service_healthy
+  networks:
+   - app-network
+ frontend:
+  build:
+   context: ./the-menufy-backoffice-new
+   dockerfile: Dockerfile
+  container_name: frontend
+  ports:
+   - "5173:5173"
+  environment:
+   VITE_BACKEND_URL: http://backend:8089/kaddem
+  depends_on:
+   backend:
+    condition: service_started
+  networks:
+   - app-network
  prometheus:
   image: prom/prometheus:v2.47.1
   container_name: prometheus
@@ -35,15 +56,8 @@ services:
    - "9090:9090"
   command:
    - "--config.file=/etc/prometheus/prometheus.yml"
-  depends_on:
-   - oussemajridi-4twin2-g6-kaddem
- frontend:
-  build:
-   context: ./the-menufy-backoffice-new
-   dockerfile: Dockerfile
-  ports:
-   - "5173:5173"
-  environment:
-   - VITE_BACKEND_URL=http://192.168.33.10:8089/kaddem
-  depends_on:
-   - oussemajridi-4twin2-g6-kaddem
+  networks:
+   - app-network
+networks:
+ app-network:
+  driver: bridge
