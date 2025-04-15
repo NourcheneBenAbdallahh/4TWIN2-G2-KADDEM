@@ -38,6 +38,17 @@ services:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml
     networks:
       - app-network
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana-storage:/var/lib/grafana
+    networks:
+      - app-network
+    depends_on:
+      - prometheus
 
 networks:
   app-network:
