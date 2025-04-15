@@ -46,20 +46,21 @@ pipeline {
             steps {
                 script {
                     try {
-                        sh 'cd kaddem/kaddem && mvn clean install -DskipTests'
+                        bat 'cd kaddem\\kaddem && mvn clean install -DskipTests'
                     } catch (e) {
-                        echo "Code build failed: ${e.message}"
+                        echo "Build failed: ${e.message}"
                         throw e
                     }
                 }
             }
         }
 
+
         stage('Testing') {
             steps {
                 script {
                     try {
-                        sh 'cd kaddem/kaddem && mvn test'
+                        bat 'cd kaddem/kaddem && mvn test'
                     } catch (e) {
                         echo "Tests failed: ${e.message}"
                     }
@@ -71,7 +72,7 @@ pipeline {
             steps {
                 script {
                     try {
-                        sh 'cd kaddem/kaddem && mvn sonar:sonar -Dsonar.token=squ_a6ab247cf9bcba1c053271d3239cf41966f27b63 -DskipTests'
+                        bat 'cd kaddem/kaddem && mvn sonar:sonar -Dsonar.token=squ_a6ab247cf9bcba1c053271d3239cf41966f27b63 -DskipTests'
                     } catch (e) {
                         echo "SonarQube analysis failed: ${e.message}"
                         throw e
@@ -84,7 +85,7 @@ pipeline {
             steps {
                 script {
                     try {
-                        sh "cd kaddem/kaddem && mvn deploy --settings ${MAVEN_SETTINGS} -DskipTests"
+                        bat "cd kaddem/kaddem && mvn deploy --settings ${MAVEN_SETTINGS} -DskipTests"
                     } catch (e) {
                         echo "Deployment to Nexus failed: ${e.message}"
                     }
@@ -96,7 +97,7 @@ pipeline {
             steps {
                 script {
                     try {
-                        sh 'cd kaddem/kaddem && mvn clean install -DskipTests'
+                        bat 'cd kaddem/kaddem && mvn clean install -DskipTests'
                     } catch (e) {
                         echo "JAR build failed: ${e.message}"
                         throw e
@@ -109,7 +110,7 @@ pipeline {
             steps {
                 script {
                     try {
-                        sh '''
+                        bat '''
                             cd kaddem/kaddem
 
                             echo "Stopping and cleaning up existing containers..."
@@ -143,7 +144,7 @@ pipeline {
                             usernameVariable: 'DOCKER_USERNAME',
                             passwordVariable: 'DOCKER_PASSWORD'
                         )]) {
-                            sh """
+                            bat """
                                 echo "Logging into Docker Hub..."
                                 echo "\$DOCKER_PASSWORD" | docker login -u "\$DOCKER_USERNAME" --password-stdin
 
