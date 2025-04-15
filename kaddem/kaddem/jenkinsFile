@@ -137,7 +137,7 @@ pipeline {
                 script {
                     try {
                         sh '''
-                            cd kaddem/kaddem
+                            cd kaddem
                             sudo docker-compose down
                             sudo docker-compose build
                             sudo docker-compose up -d

@@ -3,7 +3,7 @@ services:
  oussemajridi-4twin2-g6-kaddem:
   image: oussemajridi-4twin2-g6-kaddem:latest
   build:
-   context: .
+   context: ./kaddem/
    dockerfile: Dockerfile
   ports:
    - "8089:8089"
@@ -35,5 +35,15 @@ services:
    - "9090:9090"
   command:
    - "--config.file=/etc/prometheus/prometheus.yml"
+  depends_on:
+   - oussemajridi-4twin2-g6-kaddem
+ frontend:
+  build:
+   context: ./the-menufy-backoffice-new
+   dockerfile: Dockerfile
+  ports:
+   - "5173:5173"
+  environment:
+   - VITE_BACKEND_URL=http://localhost:8089/kaddem
   depends_on:
    - oussemajridi-4twin2-g6-kaddem
