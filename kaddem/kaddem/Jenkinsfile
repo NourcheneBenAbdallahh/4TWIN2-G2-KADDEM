@@ -58,6 +58,15 @@ pipeline {
         }
     }
 }
+      stage('Deploy Grafana') {
+    steps {
+        script {
+            echo 'Déploiement de Grafana...'
+            sh 'docker compose up -d grafana'
+        }
+    }
+}
+
 
 
       stage('Build Docker Image') {
