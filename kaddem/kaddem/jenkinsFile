@@ -1,6 +1,11 @@
 
 pipeline {
-    agent any
+        agent {
+             node {
+            label 'slave_build'
+           }
+        }
+    //agent any
 
     tools {
         maven 'M2_HOME'
@@ -19,12 +24,7 @@ pipeline {
 
     stages {
 
-        agent {
-             node {
-            label 'slave_build'
-           }
-        }
-        
+
         stage('Checkout Code') {
             steps {
                 script {
