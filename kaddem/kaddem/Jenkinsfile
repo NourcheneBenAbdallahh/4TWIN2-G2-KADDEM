@@ -27,15 +27,15 @@ pipeline {
                 }
             }
         }
-
-        stage('SonarQube Analysis') {
-    steps {
-        dir('kaddem/kaddem') {
-           sh 'mvn sonar:sonar'
-
+stage('SonarQube Analysis') {
+            steps {
+                dir('kaddem/kaddem') {
+                    withSonarQubeEnv("${env.SONARQUBE}") {
+                        sh 'mvn sonar:sonar'
+                    }
+                }
+            }
         }
-    }
-}
 
 
         stage('Deploy to Nexus') {
