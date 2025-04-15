@@ -7,7 +7,6 @@ import org.springframework.web.bind.annotation.CrossOrigin;
 
 @EnableScheduling
 @SpringBootApplication
-@CrossOrigin("*")
 public class KaddemApplication {
 
     public static void main(String[] args) {
