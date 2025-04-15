@@ -8,6 +8,7 @@ pipeline {
     environment {
         SONARQUBE = 'SonarServer'  // Nom défini dans Jenkins > SonarQube servers
     DOCKER_IMAGE = 'nourcheneba/kenzo:nourchenebenabdallah-4twin2-g2-kaddem'
+  SPRING_DATASOURCE_PASSWORD = 'rootpass'
 
     }
 
