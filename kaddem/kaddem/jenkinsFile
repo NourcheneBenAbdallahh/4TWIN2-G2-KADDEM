@@ -59,6 +59,15 @@ pipeline {
                 }
             }
         }
+        stage('starting SonarQube & Nexus') {
+            steps {
+                script {
+                    sh '''
+                        sudo docker restart sonarqube nexus
+                    '''
+                }
+            }
+        }
         stage('SonarQube') {
             steps {
                 script {
