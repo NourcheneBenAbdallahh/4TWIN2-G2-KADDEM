@@ -64,6 +64,7 @@ pipeline {
                 script {
                     sh '''
                         sudo docker restart sonarqube nexus
+                        sleep 30
                     '''
                 }
             }
