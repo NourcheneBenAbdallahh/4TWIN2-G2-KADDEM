@@ -12,11 +12,15 @@ pipeline {
     }
 
   stages {
-        stage('Checkout') {
-            steps {
-                git branch: 'NourcheneBenAbdallah-4TWIN2-G2', url: 'https://github.com/NourcheneBenAbdallahh/4TWIN2-G2-KADDEM.git'
-            }
+      stage('Checkout') {
+    steps {
+        git branch: 'NourcheneBenAbdallah-4TWIN2-G2', url: 'https://github.com/NourcheneBenAbdallahh/4TWIN2-G2-KADDEM.git'
+        script {
+            env.GIT_BRANCH = sh(script: "git rev-parse --abbrev-ref HEAD", returnStdout: true).trim()
         }
+    }
+}
+
 
         stage('Build & Test') {
             steps {
@@ -27,14 +31,15 @@ pipeline {
         }
 
         stage('SonarQube Analysis') {
-            steps {
-                dir('kaddem/kaddem') {
-                    withSonarQubeEnv("${env.SONARQUBE}") {
-                        sh 'mvn sonar:sonar'
-                    }
-                }
+    steps {
+        dir('kaddem/kaddem') {
+            withSonarQubeEnv("${env.SONARQUBE}") {
+                sh "mvn sonar:sonar -Dsonar.branch.name=${env.GIT_BRANCH}"
             }
         }
+    }
+}
+
 
         stage('Deploy to Nexus') {
             steps {
