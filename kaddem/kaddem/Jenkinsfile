@@ -65,6 +65,8 @@ stage('SonarQube Analysis') {
     steps {
         dir('kaddem/kaddem') { 
             script {
+                 sh 'docker rm -f grafana || true'
+
                 echo 'Déploiement de Grafana...'
                 sh 'docker compose up -d grafana'
             }
