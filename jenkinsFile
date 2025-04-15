@@ -101,7 +101,7 @@ stage('Deploy to Nexus') {
 
    stage('SonarQube Analysis') {
             steps {
-                sh 'mvn sonar:sonar -Dsonar.token=sqa_a390d6d770e332f05c5b2729c81c9b94335fad30 -Dmaven.test.skip=true'
+                sh 'mvn sonar:sonar -Dsonar.token=sqa_e25ca668e6e10b89039ea9d7f1e27b0a6536f170 -Dmaven.test.skip=true'
 
 
             }
