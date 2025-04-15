@@ -41,7 +41,7 @@ services:
   ports:
    - "5173:5173"
   environment:
-   VITE_BACKEND_URL: http://backend:8089/kaddem
+   VITE_BACKEND_URL: http://192.168.33.10:8089/kaddem
   depends_on:
    backend:
     condition: service_started
