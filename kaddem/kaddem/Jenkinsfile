@@ -60,12 +60,15 @@ pipeline {
 }
       stage('Deploy grafana') {
     steps {
-        script {
-            echo 'Déploiement de Grafana...'
-            sh 'docker compose up -d grafana'
+        dir('kaddem/kaddem') { 
+            script {
+                echo 'Déploiement de Grafana...'
+                sh 'docker compose up -d grafana'
+            }
         }
     }
 }
+
 
 
 
