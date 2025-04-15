@@ -55,3 +55,5 @@ networks:
     driver: bridge
 volumes:
   db-data:
+  grafana-storage:
+
