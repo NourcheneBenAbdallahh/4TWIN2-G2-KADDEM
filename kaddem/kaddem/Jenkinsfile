@@ -93,12 +93,12 @@ pipeline {
 
    post {
     success {
-        mail to: 'nourchene.benabdallah@esprit.tn',
+        mail to: 'nourchenebenabdallah3@gmail.com',
              subject: '✅ Build Réussi - Kaddem',
              body: "Le build du projet Kaddem a été réalisé avec succès sur Jenkins."
     }
     failure {
-        mail to: 'nourchene.benabdallah@esprit.tn',
+        mail to: 'nourchenebenabdallah3@gmail.com',
              subject: '❌ Échec du Build - Kaddem',
              body: "Le build du projet Kaddem a échoué. Veuillez consulter Jenkins pour plus de détails."
     }
