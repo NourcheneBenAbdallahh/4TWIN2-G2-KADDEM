@@ -19,6 +19,12 @@ pipeline {
 
     stages {
 
+        agent {
+             node {
+            label 'slave_build'
+           }
+        }
+        
         stage('Checkout Code') {
             steps {
                 script {
