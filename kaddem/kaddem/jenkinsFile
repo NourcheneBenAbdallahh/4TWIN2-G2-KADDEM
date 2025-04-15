@@ -6,7 +6,7 @@ pipeline {
     }
 
     tools {
-        maven 'M2_HOME'
+        maven 'M2_HOME' // Must be configured in Jenkins > Global Tool Configuration
     }
 
     options {
@@ -16,7 +16,7 @@ pipeline {
     environment {
         EXAMPLE_VAR = 'dev'
         NEXUS_REPO_URL = "http://127.0.0.1:8081/repository/maven-releases/"
-        MAVEN_SETTINGS = "/usr/share/maven/conf/settings.xml"
+        MAVEN_SETTINGS = "C:\\Users\\jenkins\\.m2\\settings.xml" // Adjust this path for Windows
         DOCKER_IMAGE_NAME = "oussabd/abdellaouioussema-g2-4twin2:latest"
     }
 
@@ -43,7 +43,7 @@ pipeline {
             steps {
                 script {
                     try {
-                        bat 'cd kaddem\\kaddem && mvn clean install'
+                        bat 'cd kaddem\\kaddem && call mvn clean install'
                     } catch (e) {
                         echo "Build failed: ${e.message}"
                         throw e
@@ -57,7 +57,7 @@ pipeline {
                 script {
                     try {
                         withCredentials([string(credentialsId: 'sonarqube-token', variable: 'SONAR_TOKEN')]) {
-                            bat 'cd kaddem\\kaddem && mvn sonar:sonar -Dsonar.token=%SONAR_TOKEN% -DskipTests'
+                            bat 'cd kaddem\\kaddem && call mvn sonar:sonar -Dsonar.token=%SONAR_TOKEN% -DskipTests'
                         }
                     } catch (e) {
                         echo "SonarQube analysis failed: ${e.message}"
@@ -71,7 +71,7 @@ pipeline {
             steps {
                 script {
                     try {
-                        bat "cd kaddem\\kaddem && mvn deploy --settings ${MAVEN_SETTINGS} -DskipTests"
+                        bat "cd kaddem\\kaddem && call mvn deploy --settings \"%MAVEN_SETTINGS%\" -DskipTests"
                     } catch (e) {
                         echo "Deployment to Nexus failed: ${e.message}"
                         throw e
@@ -90,9 +90,9 @@ pipeline {
                             echo Stopping and removing existing containers...
                             docker compose down --remove-orphans
 
-                            echo Removing existing Prometheus and Grafana containers...
-                            docker rm -f my-prometheus-container || echo "Not found"
-                            docker rm -f grafana || echo "Not found"
+                            echo Removing Prometheus and Grafana if they exist...
+                            docker rm -f my-prometheus-container 2>nul || echo "Prometheus not running"
+                            docker rm -f grafana 2>nul || echo "Grafana not running"
 
                             echo Rebuilding and starting containers...
                             docker compose build
@@ -123,7 +123,7 @@ pipeline {
                                 echo Tagging Docker image...
                                 docker tag abdellaouioussema-g2-4twin2:latest %DOCKER_IMAGE_NAME%
 
-                                echo Pushing Docker image to Docker Hub...
+                                echo Pushing Docker image...
                                 docker push %DOCKER_IMAGE_NAME%
                             """
                         }
