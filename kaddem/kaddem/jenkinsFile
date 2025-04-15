@@ -137,7 +137,7 @@ pipeline {
         script {
             try {
                 sh '''
-                    cd kaddem
+                    cd kaddem/
                     docker compose down
                     docker compose up -d --build
                     sleep 10
