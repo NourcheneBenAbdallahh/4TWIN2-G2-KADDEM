@@ -13,7 +13,7 @@ pipeline {
     }
 
   stages {
-      stage('Checkout') {
+      stage('Checkouuut') {
     steps {
         git branch: 'NourcheneBenAbdallah-4TWIN2-G2', url: 'https://github.com/NourcheneBenAbdallahh/4TWIN2-G2-KADDEM.git'
         
