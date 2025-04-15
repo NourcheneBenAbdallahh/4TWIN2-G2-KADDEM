@@ -137,11 +137,9 @@ pipeline {
         script {
             try {
                 sh '''
-                    # Navigate to the directory containing docker-compose.yml
                     cd kaddem
                     docker compose down
                     docker compose up -d --build
-                    # Wait for a few seconds to allow the containers to start
                     sleep 10
                     docker ps
                 '''
